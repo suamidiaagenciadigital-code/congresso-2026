@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscrição — Congresso Fenapestalozzi 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+  .form-wrap { max-width: 680px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 16px rgba(0,0,0,.1); padding: 32px; }
+  h1 { font-size: 1.4rem; color: #1a5276; margin-bottom: 4px; }
+  .subtitulo { color: #666; font-size: .9rem; margin-bottom: 24px; }
+
+  .progress-bar { display: flex; justify-content: space-between; margin-bottom: 28px; }
+  .step-indicator { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+  .step-indicator::before { content: ''; position: absolute; top: 15px; left: -50%; width: 100%; height: 3px; background: #ddd; z-index: 0; }
+  .step-indicator:first-child::before { display: none; }
+  .step-circle { width: 32px; height: 32px; border-radius: 50%; background: #ddd; color: #999; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: bold; z-index: 1; transition: background .3s; }
+  .step-indicator.active .step-circle,
+  .step-indicator.done .step-circle { background: #1a5276; color: #fff; }
+  .step-indicator.done::before { background: #1a5276; }
+  .step-label { font-size: .7rem; color: #999; margin-top: 4px; text-align: center; }
+  .step-indicator.active .step-label { color: #1a5276; font-weight: bold; }
+
+  .etapa { display: none; }
+  .etapa.ativa { display: block; }
+  .etapa h2 { font-size: 1.1rem; color: #1a5276; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #eee; }
+
+  .campo { margin-bottom: 18px; }
+  .campo label { display: block; font-size: .88rem; font-weight: 600; margin-bottom: 5px; color: #444; }
+  .campo label .obrig { color: #c0392b; }
+  .campo input[type=text], .campo input[type=email], .campo input[type=date],
+  .campo input[type=tel], .campo select, .campo textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .93rem; transition: border-color .2s;
+  }
+  .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: #1a5276; }
+  .campo textarea { resize: vertical; min-height: 80px; }
+  .campo.erro input, .campo.erro select, .campo.erro textarea { border-color: #c0392b; }
+  .msg-erro { color: #c0392b; font-size: .8rem; margin-top: 4px; display: none; }
+  .campo.erro .msg-erro { display: block; }
+
+  .opcoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .opcao { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
+  .opcao input { cursor: pointer; width: 17px; height: 17px; }
+
+  .condicional { display: none; }
+  .condicional.visivel { display: block; }
+
+  .nav-btns { display: flex; justify-content: space-between; margin-top: 28px; }
+  .btn { padding: 11px 28px; border: none; border-radius: 6px; font-size: .95rem; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn-anterior { background: #eee; color: #555; }
+  .btn-anterior:hover { background: #ddd; }
+  .btn-proximo { background: #1a5276; color: #fff; }
+  .btn-proximo:hover { background: #154360; }
+  .btn-enviar { background: #1e8449; color: #fff; }
+  .btn-enviar:hover { background: #196f3d; }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+  #msg-sucesso { display: none; text-align: center; padding: 32px 16px; }
+  #msg-sucesso h2 { color: #1e8449; font-size: 1.4rem; margin-bottom: 12px; }
+  #msg-sucesso p { color: #555; line-height: 1.6; }
+  .icone-ok { font-size: 3rem; margin-bottom: 16px; }
+  .alerta { background: #fef9e7; border: 1px solid #f9ca24; border-radius: 6px; padding: 12px 16px; font-size: .88rem; color: #7d6608; margin-bottom: 18px; }
+
+  @media (max-width: 500px) {
+    .form-wrap { padding: 20px 14px; }
+    .step-label { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="form-wrap">
+  <h1>Inscrição — Congresso Fenapestalozzi 2026</h1>
+  <p class="subtitulo">Preencha os dados abaixo para garantir sua vaga.</p>
+
+  <div class="progress-bar" id="progress-bar">
+    <div class="step-indicator active" data-step="1"><div class="step-circle">1</div><span class="step-label">Dados pessoais</span></div>
+    <div class="step-indicator" data-step="2"><div class="step-circle">2</div><span class="step-label">Vínculo</span></div>
+    <div class="step-indicator" data-step="3"><div class="step-circle">3</div><span class="step-label">Perfil</span></div>
+    <div class="step-indicator" data-step="4"><div class="step-circle">4</div><span class="step-label">Acessibilidade</span></div>
+    <div class="step-indicator" data-step="5"><div class="step-circle">5</div><span class="step-label">LGPD</span></div>
+  </div>
+
+  <form id="form-inscricao" novalidate>
+
+    <!-- ETAPA 1 -->
+    <div class="etapa ativa" id="etapa-1">
+      <h2>Etapa 1 — Dados pessoais</h2>
+      <div class="campo" id="campo-nome_completo">
+        <label>Nome completo <span class="obrig">*</span></label>
+        <input type="text" name="nome_completo" id="nome_completo" placeholder="Seu nome completo" autocomplete="name">
+        <span class="msg-erro">Informe seu nome completo (mínimo 5 caracteres).</span>
+      </div>
+      <div class="campo" id="campo-nome_social">
+        <label>Nome social / nome para crachá e certificado</label>
+        <input type="text" name="nome_social" id="nome_social" placeholder="Deixe em branco para usar o nome completo">
+      </div>
+      <div class="campo" id="campo-cpf">
+        <label>CPF <span class="obrig">*</span></label>
+        <input type="text" name="cpf" id="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+        <span class="msg-erro">Informe um CPF válido.</span>
+      </div>
+      <div class="campo" id="campo-data_nascimento">
+        <label>Data de nascimento</label>
+        <input type="date" name="data_nascimento" id="data_nascimento">
+      </div>
+      <div class="campo" id="campo-email">
+        <label>E-mail <span class="obrig">*</span></label>
+        <input type="email" name="email" id="email" placeholder="seu@email.com" autocomplete="email">
+        <span class="msg-erro">Informe um e-mail válido.</span>
+      </div>
+      <div class="campo" id="campo-email_confirm">
+        <label>Confirmar e-mail <span class="obrig">*</span></label>
+        <input type="email" name="email_confirm" id="email_confirm" placeholder="Repita seu e-mail">
+        <span class="msg-erro">Os e-mails não coincidem.</span>
+      </div>
+      <div class="campo" id="campo-telefone">
+        <label>Telefone / WhatsApp <span class="obrig">*</span></label>
+        <input type="tel" name="telefone" id="telefone" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric">
+        <span class="msg-erro">Informe um telefone válido com DDD.</span>
+      </div>
+    </div>
+
+    <!-- ETAPA 2 -->
+    <div class="etapa" id="etapa-2">
+      <h2>Etapa 2 — Vínculo institucional</h2>
+      <div class="campo" id="campo-vinculo_pestalozzi">
+        <label>Você tem vínculo com a Pestalozzi? <span class="obrig">*</span></label>
+        <div class="opcoes">
+          <label class="opcao"><input type="radio" name="vinculo_pestalozzi" value="1"> Sim</label>
+          <label class="opcao"><input type="radio" name="vinculo_pestalozzi" value="0"> Não</label>
+        </div>
+        <span class="msg-erro">Selecione uma opção.</span>
+      </div>
+      <div class="condicional" id="bloco-uf-municipio">
+        <div class="campo" id="campo-uf">
+          <label>Estado (UF) <span class="obrig">*</span></label>
+          <select name="uf" id="uf">
+            <option value="">Selecione o estado</option>
+            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+            <option>SP</option><option>SE</option><option>TO</option>
+          </select>
+          <span class="msg-erro">Selecione seu estado.</span>
+        </div>
+        <div class="campo" id="campo-municipio">
+          <label>Município <span class="obrig">*</span></label>
+          <input type="text" name="municipio" id="municipio" placeholder="Seu município">
+          <span class="msg-erro">Informe seu município.</span>
+        </div>
+      </div>
+      <div class="campo" id="campo-area_atuacao">
+        <label>Área de atuação <span class="obrig">*</span></label>
+        <div class="opcoes">
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Saúde"> Saúde</label>
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Assistência Social"> Assistência Social</label>
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Educação"> Educação</label>
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Esporte"> Esporte</label>
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Trabalho"> Trabalho</label>
+        </div>
+        <span class="msg-erro">Selecione ao menos uma área.</span>
+      </div>
+    </div>
+
+    <!-- ETAPA 3 -->
+    <div class="etapa" id="etapa-3">
+      <h2>Etapa 3 — Perfil do participante</h2>
+      <div class="campo" id="campo-identidade_genero">
+        <label>Identidade de gênero</label>
+        <div class="opcoes">
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Mulher Cis"> Mulher Cis</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Homem Cis"> Homem Cis</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Mulher Trans"> Mulher Trans</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Homem Trans"> Homem Trans</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Não-binário"> Não-binário</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Prefiro não responder"> Prefiro não responder</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Outro" id="genero_outro_check"> Outro</label>
+        </div>
+      </div>
+      <div class="condicional campo" id="bloco-genero-outro">
+        <label>Especifique sua identidade de gênero</label>
+        <input type="text" name="genero_outro" id="genero_outro" placeholder="Descreva">
+      </div>
+      <div class="campo" id="campo-formacao">
+        <label>Formação acadêmica</label>
+        <select name="formacao" id="formacao">
+          <option value="">Selecione (opcional)</option>
+          <option>Ensino Médio</option><option>Graduação</option>
+          <option>Pós-graduação</option><option>Mestrado</option><option>Doutorado</option>
+        </select>
+      </div>
+      <div class="campo" id="campo-como_soube">
+        <label>Como soube do evento?</label>
+        <div class="opcoes">
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="Instagram"> Instagram</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="LinkedIn"> LinkedIn</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="E-mail"> E-mail</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="Indicação"> Indicação</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="WhatsApp"> WhatsApp</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="Google"> Google</label>
+          <label class="opcao"><input type="checkbox" name="como_soube[]" value="Outro" id="como_soube_outro_check"> Outro</label>
+        </div>
+      </div>
+      <div class="condicional campo" id="bloco-como-soube-outro">
+        <label>Como soube — especifique</label>
+        <input type="text" name="como_soube_outro" id="como_soube_outro" placeholder="Descreva">
+      </div>
+    </div>
+
+    <!-- ETAPA 4 -->
+    <div class="etapa" id="etapa-4">
+      <h2>Etapa 4 — Acessibilidade e alimentação</h2>
+      <div class="campo" id="campo-pcd">
+        <label>Você é pessoa com deficiência (PCD)? <span class="obrig">*</span></label>
+        <div class="opcoes">
+          <label class="opcao"><input type="radio" name="pcd" value="1"> Sim</label>
+          <label class="opcao"><input type="radio" name="pcd" value="0"> Não</label>
+        </div>
+        <span class="msg-erro">Selecione uma opção.</span>
+      </div>
+      <div class="condicional" id="bloco-pcd">
+        <div class="campo" id="campo-pcd_descricao">
+          <label>Especifique a deficiência <span class="obrig">*</span></label>
+          <textarea name="pcd_descricao" id="pcd_descricao" placeholder="Descreva sua deficiência"></textarea>
+          <span class="msg-erro">Por favor, descreva sua deficiência.</span>
+        </div>
+        <div class="campo" id="campo-pcd_recurso">
+          <label>Recurso de acessibilidade necessário <span class="obrig">*</span></label>
+          <textarea name="pcd_recurso" id="pcd_recurso" placeholder="Ex: intérprete de Libras, cadeira de rodas..."></textarea>
+          <span class="msg-erro">Por favor, informe o recurso necessário.</span>
+        </div>
+      </div>
+      <div class="campo" id="campo-restricao_alimentar">
+        <label>Restrição alimentar</label>
+        <div class="opcoes">
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Nenhuma" id="restricao_nenhuma"> Nenhuma</label>
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Vegetariano"> Vegetariano</label>
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Intolerância à lactose"> Lactose</label>
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Intolerância ao glúten"> Glúten</label>
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Diabético"> Diabético</label>
+          <label class="opcao"><input type="checkbox" name="restricao_alimentar[]" value="Alergia grave" id="restricao_alergia"> Alergia grave</label>
+        </div>
+      </div>
+      <div class="condicional campo" id="bloco-alergia">
+        <label>Descreva sua alergia grave <span class="obrig">*</span></label>
+        <input type="text" name="restricao_outro" id="restricao_outro" placeholder="Ex: amendoim, frutos do mar...">
+        <span class="msg-erro">Por favor, descreva sua alergia.</span>
+      </div>
+    </div>
+
+    <!-- ETAPA 5 -->
+    <div class="etapa" id="etapa-5">
+      <h2>Etapa 5 — Termos e envio</h2>
+      <div class="alerta">Revise seus dados antes de enviar. Após a inscrição você receberá um e-mail de confirmação com seu QR Code.</div>
+      <div class="campo" id="campo-aceite_lgpd">
+        <label class="opcao" style="font-weight:normal;font-size:.9rem;align-items:flex-start;gap:10px;">
+          <input type="checkbox" name="aceite_lgpd" id="aceite_lgpd" style="margin-top:3px;flex-shrink:0;">
+          <span>Declaro que li e concordo com os <strong>termos de uso e política de privacidade</strong>. <span class="obrig">*</span></span>
+        </label>
+        <span class="msg-erro">Você precisa aceitar os termos para continuar.</span>
+      </div>
+      <div class="campo" id="campo-aceite_imagem">
+        <label class="opcao" style="font-weight:normal;font-size:.9rem;align-items:flex-start;gap:10px;">
+          <input type="checkbox" name="aceite_imagem" id="aceite_imagem" style="margin-top:3px;flex-shrink:0;">
+          <span>Autorizo o uso da minha imagem e dados para fins de divulgação do evento.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button type="button" class="btn btn-anterior" id="btn-anterior" style="display:none;">← Anterior</button>
+      <button type="button" class="btn btn-proximo" id="btn-proximo">Próximo →</button>
+      <button type="submit" class="btn btn-enviar" id="btn-enviar" style="display:none;">Enviar inscrição</button>
+    </div>
+  </form>
+
+  <div id="msg-sucesso">
+    <div class="icone-ok">✅</div>
+    <h2>Inscrição realizada com sucesso!</h2>
+    <p>Em alguns minutos você receberá um e-mail de confirmação com seu QR Code de credenciamento.<br>Guarde-o para apresentar na entrada do evento.</p>
+  </div>
+</div>
+
+<script>
+let etapaAtual = 1;
+const totalEtapas = 5;
+
+// Máscaras
+function maskCPF(v) {
+  v = v.replace(/\D/g,'').slice(0,11);
+  if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d+)/,'$1.$2.$3');
+  else if(v.length>3) v=v.replace(/(\d{3})(\d+)/,'$1.$2');
+  return v;
+}
+function maskTel(v) {
+  v = v.replace(/\D/g,'').slice(0,11);
+  if(v.length>10) v=v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+  else if(v.length>6) v=v.replace(/(\d{2})(\d{4})(\d+)/,'($1) $2-$3');
+  else if(v.length>2) v=v.replace(/(\d{2})(\d+)/,'($1) $2');
+  return v;
+}
+document.getElementById('cpf').addEventListener('input', function(){ this.value = maskCPF(this.value); });
+document.getElementById('telefone').addEventListener('input', function(){ this.value = maskTel(this.value); });
+
+// Validação de CPF
+function validarCPF(cpf) {
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length!==11||/^(\d)\1{10}$/.test(cpf)) return false;
+  for(let t=9;t<11;t++){
+    let s=0;
+    for(let i=0;i<t;i++) s+=parseInt(cpf[i])*(t+1-i);
+    const r=((s*10)%11)%10;
+    if(r!==parseInt(cpf[t])) return false;
+  }
+  return true;
+}
+
+// Condicionais
+document.querySelectorAll('input[name="vinculo_pestalozzi"]').forEach(r=>{
+  r.addEventListener('change',()=>{ document.getElementById('bloco-uf-municipio').classList.toggle('visivel',r.value==='1'&&r.checked); });
+});
+document.querySelectorAll('input[name="pcd"]').forEach(r=>{
+  r.addEventListener('change',()=>{ document.getElementById('bloco-pcd').classList.toggle('visivel',r.value==='1'&&r.checked); });
+});
+document.getElementById('genero_outro_check').addEventListener('change',function(){
+  document.getElementById('bloco-genero-outro').classList.toggle('visivel',this.checked);
+});
+document.getElementById('como_soube_outro_check').addEventListener('change',function(){
+  document.getElementById('bloco-como-soube-outro').classList.toggle('visivel',this.checked);
+});
+document.getElementById('restricao_alergia').addEventListener('change',function(){
+  document.getElementById('bloco-alergia').classList.toggle('visivel',this.checked);
+});
+document.getElementById('restricao_nenhuma').addEventListener('change',function(){
+  if(this.checked){
+    document.querySelectorAll('input[name="restricao_alimentar[]"]').forEach(cb=>{ if(cb!==this) cb.checked=false; });
+    document.getElementById('bloco-alergia').classList.remove('visivel');
+  }
+});
+document.querySelectorAll('input[name="restricao_alimentar[]"]').forEach(cb=>{
+  if(cb.id!=='restricao_nenhuma') cb.addEventListener('change',function(){ if(this.checked) document.getElementById('restricao_nenhuma').checked=false; });
+});
+
+// Validação por etapa
+function marcarErro(id,v){ const el=document.getElementById('campo-'+id); if(el) el.classList.toggle('erro',v); }
+function limparErros(){ document.querySelectorAll('.campo.erro').forEach(el=>el.classList.remove('erro')); }
+
+function validarEtapa(n){
+  limparErros(); let ok=true;
+  if(n===1){
+    if(document.getElementById('nome_completo').value.trim().length<5){ marcarErro('nome_completo',true); ok=false; }
+    if(!validarCPF(document.getElementById('cpf').value)){ marcarErro('cpf',true); ok=false; }
+    const em=document.getElementById('email').value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ marcarErro('email',true); ok=false; }
+    if(document.getElementById('email_confirm').value.trim()!==em){ marcarErro('email_confirm',true); ok=false; }
+    if(document.getElementById('telefone').value.replace(/\D/g,'').length<10){ marcarErro('telefone',true); ok=false; }
+  }
+  if(n===2){
+    const v=document.querySelector('input[name="vinculo_pestalozzi"]:checked');
+    if(!v){ marcarErro('vinculo_pestalozzi',true); ok=false; }
+    else if(v.value==='1'){
+      if(!document.getElementById('uf').value){ marcarErro('uf',true); ok=false; }
+      if(!document.getElementById('municipio').value.trim()){ marcarErro('municipio',true); ok=false; }
+    }
+    if(!document.querySelectorAll('input[name="area_atuacao[]"]:checked').length){ marcarErro('area_atuacao',true); ok=false; }
+  }
+  if(n===4){
+    const p=document.querySelector('input[name="pcd"]:checked');
+    if(!p){ marcarErro('pcd',true); ok=false; }
+    else if(p.value==='1'){
+      if(!document.getElementById('pcd_descricao').value.trim()){ marcarErro('pcd_descricao',true); ok=false; }
+      if(!document.getElementById('pcd_recurso').value.trim()){ marcarErro('pcd_recurso',true); ok=false; }
+    }
+    if(document.getElementById('restricao_alergia').checked && !document.getElementById('restricao_outro').value.trim()){
+      document.getElementById('bloco-alergia').classList.add('erro'); ok=false;
+    }
+  }
+  if(n===5){
+    if(!document.getElementById('aceite_lgpd').checked){ marcarErro('aceite_lgpd',true); ok=false; }
+  }
+  return ok;
+}
+
+function irParaEtapa(n){
+  document.querySelectorAll('.etapa').forEach(el=>el.classList.remove('ativa'));
+  document.getElementById('etapa-'+n).classList.add('ativa');
+  document.querySelectorAll('.step-indicator').forEach(el=>{
+    const s=parseInt(el.dataset.step);
+    el.classList.toggle('active',s===n); el.classList.toggle('done',s<n);
+  });
+  document.getElementById('btn-anterior').style.display = n>1?'inline-block':'none';
+  document.getElementById('btn-proximo').style.display = n<totalEtapas?'inline-block':'none';
+  document.getElementById('btn-enviar').style.display = n===totalEtapas?'inline-block':'none';
+  etapaAtual=n; window.scrollTo(0,0);
+  try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
+}
+
+document.getElementById('btn-proximo').addEventListener('click',()=>{ if(validarEtapa(etapaAtual)) irParaEtapa(etapaAtual+1); });
+document.getElementById('btn-anterior').addEventListener('click',()=>{ irParaEtapa(etapaAtual-1); });
+
+// Envio
+document.getElementById('form-inscricao').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!validarEtapa(5)) return;
+  const btn=document.getElementById('btn-enviar');
+  btn.disabled=true; btn.textContent='Enviando...';
+
+  const fd=new FormData(this);
+  const dados={};
+  for(const [k,v] of fd.entries()){
+    if(k.endsWith('[]')){ const key=k.slice(0,-2); if(!dados[key]) dados[key]=[]; dados[key].push(v); }
+    else dados[k]=v;
+  }
+  ['area_atuacao','identidade_genero','como_soube','restricao_alimentar'].forEach(k=>{
+    dados[k]=JSON.stringify(Array.isArray(dados[k])?dados[k]:[]);
+  });
+  dados.aceite_lgpd=document.getElementById('aceite_lgpd').checked?1:0;
+  dados.aceite_imagem=document.getElementById('aceite_imagem').checked?1:0;
+  delete dados.email_confirm;
+
+  try{
+    const resp=await fetch('/api/inscrever',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});
+    const json=await resp.json();
+    if(json.success){
+      document.getElementById('form-inscricao').style.display='none';
+      document.getElementById('progress-bar').style.display='none';
+      document.getElementById('msg-sucesso').style.display='block';
+      try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
+    } else {
+      alert(json.mensagem||'Erro ao processar inscrição. Tente novamente.');
+      btn.disabled=false; btn.textContent='Enviar inscrição';
+    }
+  } catch(err){
+    alert('Erro de conexão. Verifique sua internet e tente novamente.');
+    btn.disabled=false; btn.textContent='Enviar inscrição';
+  }
+});
+
+window.addEventListener('load',()=>{
+  try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
+});
+</script>
+</body>
+</html>

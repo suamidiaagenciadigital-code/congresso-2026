@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Congresso Fenapestalozzi 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a5276; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; border-radius: 10px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+  h1 { font-size: 1.2rem; color: #1a5276; margin-bottom: 6px; }
+  .sub { font-size: .85rem; color: #888; margin-bottom: 28px; }
+  label { display: block; font-size: .88rem; font-weight: 600; color: #444; margin-bottom: 5px; }
+  input { width: 100%; padding: 10px 12px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .95rem; margin-bottom: 16px; }
+  input:focus { outline: none; border-color: #1a5276; }
+  .btn { width: 100%; padding: 11px; background: #1a5276; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #154360; }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .erro { background: #fdecea; color: #c0392b; border-radius: 6px; padding: 10px 14px; font-size: .88rem; margin-bottom: 18px; display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Painel Administrativo</h1>
+  <p class="sub">Congresso Fenapestalozzi 2026</p>
+  <div class="erro" id="erro"></div>
+  <form id="form-login">
+    <label>Usuário</label>
+    <input type="text" id="usuario" autocomplete="username" required>
+    <label>Senha</label>
+    <input type="password" id="senha" autocomplete="current-password" required>
+    <button type="submit" class="btn" id="btn-login">Entrar</button>
+  </form>
+</div>
+<script>
+  // Se já tem token válido, redireciona
+  if (sessionStorage.getItem('admin_token')) {
+    window.location.href = '/admin/index.html';
+  }
+
+  document.getElementById('form-login').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    const erroEl = document.getElementById('erro');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    erroEl.style.display = 'none';
+
+    try {
+      const resp = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario: document.getElementById('usuario').value,
+          senha: document.getElementById('senha').value,
+        })
+      });
+      const json = await resp.json();
+      if (json.success) {
+        sessionStorage.setItem('admin_token', json.token);
+        window.location.href = '/admin/index.html';
+      } else {
+        erroEl.textContent = json.mensagem || 'Usuário ou senha incorretos.';
+        erroEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Entrar';
+      }
+    } catch(e) {
+      erroEl.textContent = 'Erro de conexão.';
+      erroEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  });
+</script>
+</body>
+</html>

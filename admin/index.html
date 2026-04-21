@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin — Congresso Fenapestalozzi 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; color: #333; }
+  header { background: #1a5276; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.1rem; }
+  header a { color: #aed6f1; font-size: .85rem; text-decoration: none; cursor: pointer; }
+  header a:hover { color: #fff; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .counters { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .counter { background: #fff; border-radius: 8px; padding: 16px 24px; flex: 1; min-width: 160px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  .counter .num { font-size: 2rem; font-weight: 700; color: #1a5276; }
+  .counter .lbl { font-size: .83rem; color: #888; margin-top: 2px; }
+  .filtros { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.08); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .filtros label { font-size: .82rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .filtros input, .filtros select { padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .88rem; min-width: 160px; }
+  .filtros input:focus, .filtros select:focus { outline: none; border-color: #1a5276; }
+  .btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: .88rem; font-weight: 600; cursor: pointer; }
+  .btn:hover { opacity: .88; }
+  .btn-filtrar { background: #1a5276; color: #fff; }
+  .btn-limpar  { background: #eee; color: #555; }
+  .btn-csv     { background: #1e8449; color: #fff; }
+  .btn-cert    { background: #8e44ad; color: #fff; }
+  .btn-cert-ind { background: #7d3c98; color: #fff; padding: 5px 10px; font-size: .78rem; }
+  .acoes { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .msg-acao { font-size: .88rem; color: #555; }
+  .tbl-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  thead th { background: #1a5276; color: #fff; padding: 10px 12px; text-align: left; white-space: nowrap; }
+  tbody tr:nth-child(even) { background: #f9fafb; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+  .badge-sim { background: #d5f5e3; color: #1e8449; }
+  .badge-nao { background: #fdecea; color: #c0392b; }
+  .badge-env { background: #d2b4de; color: #6c3483; }
+  .vazio { text-align: center; padding: 40px; color: #aaa; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Painel Admin — Congresso Fenapestalozzi 2026</h1>
+  <a id="btn-sair">Sair</a>
+</header>
+
+<div class="container">
+  <div class="counters" id="counters">
+    <div class="counter"><div class="num" id="cnt-total">—</div><div class="lbl">Total de inscritos</div></div>
+    <div class="counter"><div class="num" id="cnt-cert">—</div><div class="lbl">Certificados enviados</div></div>
+    <div class="counter"><div class="num" id="cnt-pend">—</div><div class="lbl">Certificados pendentes</div></div>
+  </div>
+
+  <div class="filtros">
+    <div><label>Busca (nome, e-mail, CPF)</label><input type="text" id="f-busca" placeholder="Digite para buscar..."></div>
+    <div><label>Estado (UF)</label>
+      <select id="f-uf">
+        <option value="">Todos</option>
+        <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+        <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+        <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+        <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+        <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+        <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+        <option>SP</option><option>SE</option><option>TO</option>
+      </select>
+    </div>
+    <div><label>Área de atuação</label>
+      <select id="f-area">
+        <option value="">Todas</option>
+        <option>Saúde</option><option>Assistência Social</option>
+        <option>Educação</option><option>Esporte</option><option>Trabalho</option>
+      </select>
+    </div>
+    <div><label>Certificado</label>
+      <select id="f-cert">
+        <option value="">Todos</option>
+        <option value="0">Não enviados</option>
+        <option value="1">Enviados</option>
+      </select>
+    </div>
+    <button class="btn btn-filtrar" id="btn-filtrar">Filtrar</button>
+    <button class="btn btn-limpar"  id="btn-limpar">Limpar</button>
+  </div>
+
+  <div class="acoes">
+    <button class="btn btn-csv"  id="btn-csv">⬇ Exportar CSV</button>
+    <button class="btn btn-cert" id="btn-cert-todos">Enviar certificados para todos</button>
+    <span class="msg-acao" id="msg-acao"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Nome</th><th>CPF</th><th>E-mail</th>
+          <th>UF</th><th>Área</th><th>PCD</th><th>Certificado</th><th>Inscrito em</th><th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const token = () => sessionStorage.getItem('admin_token');
+
+// Redireciona se não logado
+if (!token()) window.location.href = '/admin/login.html';
+
+// Logout
+document.getElementById('btn-sair').addEventListener('click', () => {
+  sessionStorage.removeItem('admin_token');
+  window.location.href = '/admin/login.html';
+});
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` };
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtData(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+
+function arrLabel(v) {
+  try { const a = JSON.parse(v); return Array.isArray(a) ? a.join(', ') : v; } catch(e) { return v||''; }
+}
+
+async function carregarDados(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  try {
+    const resp = await fetch(`/api/admin/inscritos?${qs}`, { headers: authHeaders() });
+    if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
+    const json = await resp.json();
+    if (!json.success) return;
+
+    // Contadores
+    document.getElementById('cnt-total').textContent = json.total;
+    document.getElementById('cnt-cert').textContent  = json.total_cert;
+    document.getElementById('cnt-pend').textContent  = json.total - json.total_cert;
+
+    // Tabela
+    const tbody = document.getElementById('tbody');
+    if (!json.dados.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="vazio">Nenhum inscrito encontrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = json.dados.map(ins => `
+      <tr>
+        <td>${ins.id}</td>
+        <td>${esc(ins.nome_social || ins.nome_completo)}</td>
+        <td style="font-family:monospace">${esc(ins.cpf_parcial)}</td>
+        <td>${esc(ins.email)}</td>
+        <td>${esc(ins.uf||'—')}</td>
+        <td>${esc(arrLabel(ins.area_atuacao))}</td>
+        <td><span class="badge ${ins.pcd?'badge-sim':'badge-nao'}">${ins.pcd?'Sim':'Não'}</span></td>
+        <td><span class="badge ${ins.certificado_enviado?'badge-env':'badge-nao'}">${ins.certificado_enviado?'Enviado':'Pendente'}</span></td>
+        <td>${fmtData(ins.criado_em)}</td>
+        <td><button class="btn btn-cert-ind" data-id="${ins.id}">Certificado</button></td>
+      </tr>
+    `).join('');
+
+    // Botões individuais
+    document.querySelectorAll('.btn-cert-ind').forEach(btn => {
+      btn.addEventListener('click', () => enviarCert({ modo: 'individual', id: parseInt(btn.dataset.id) }));
+    });
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function getParams() {
+  return {
+    busca: document.getElementById('f-busca').value,
+    uf:    document.getElementById('f-uf').value,
+    area:  document.getElementById('f-area').value,
+    cert:  document.getElementById('f-cert').value,
+  };
+}
+
+document.getElementById('btn-filtrar').addEventListener('click', () => carregarDados(getParams()));
+document.getElementById('btn-limpar').addEventListener('click', () => {
+  document.getElementById('f-busca').value = '';
+  document.getElementById('f-uf').value    = '';
+  document.getElementById('f-area').value  = '';
+  document.getElementById('f-cert').value  = '';
+  carregarDados();
+});
+
+// Busca em tempo real (debounce)
+let debounce;
+document.getElementById('f-busca').addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => carregarDados(getParams()), 400);
+});
+
+// CSV
+document.getElementById('btn-csv').addEventListener('click', async () => {
+  const resp = await fetch('/api/admin/exportar', { headers: authHeaders() });
+  if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `inscritos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Enviar certificados
+const msgAcao = document.getElementById('msg-acao');
+async function enviarCert(payload) {
+  if (!confirm(payload.modo === 'todos'
+    ? 'Enviar certificados para TODOS os inscritos ainda sem certificado?'
+    : 'Enviar certificado para este inscrito?')) return;
+
+  msgAcao.textContent = 'Enviando...';
+  try {
+    const resp = await fetch('/api/admin/certificado', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const json = await resp.json();
+    msgAcao.textContent = json.mensagem || (json.success ? 'Concluído.' : 'Erro.');
+    if (json.success) setTimeout(() => { carregarDados(getParams()); msgAcao.textContent = ''; }, 2000);
+  } catch(e) {
+    msgAcao.textContent = 'Erro de conexão.';
+  }
+}
+
+document.getElementById('btn-cert-todos').addEventListener('click', () => enviarCert({ modo: 'todos' }));
+
+// Carregar ao abrir
+carregarDados();
+</script>
+</body>
+</html>
