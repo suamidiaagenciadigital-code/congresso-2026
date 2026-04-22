@@ -118,7 +118,7 @@ module.exports = async (req, res) => {
   }
 
   // ── Gerar e salvar QR Code ────────────────────────────────────────────────
-  const qr_url = `${process.env.BASE_URL}/inscricao/${hash}`;
+  const qr_url = `${process.env.BASE_URL}/inscricao/?h=${hash}`;
   let qrcode_url = null;
 
   try {

@@ -29,9 +29,8 @@
 
 <script>
 async function carregar() {
-  // Lê o hash da URL: /inscricao/abc123...
-  const partes = window.location.pathname.split('/').filter(Boolean);
-  const hash = partes[partes.length - 1];
+  // Lê o hash da URL: /inscricao/?h=abc123...
+  const hash = new URLSearchParams(window.location.search).get('h') || '';
 
   if (!hash || !/^[a-f0-9]{32}$/.test(hash)) {
     renderErro('Código de inscrição inválido.');
