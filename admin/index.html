@@ -12,25 +12,44 @@
   header a { color: #dacabb; font-size: .85rem; text-decoration: none; cursor: pointer; }
   header a:hover { color: #fff; }
   .container { max-width: 1300px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Abas */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #dde3ed; }
+  .tab { padding: 10px 22px; font-size: .9rem; font-weight: 600; cursor: pointer; border-radius: 6px 6px 0 0; border: none; background: none; color: #888; transition: all .15s; }
+  .tab:hover { background: #f0e8de; color: #402B16; }
+  .tab.ativo { background: #402B16; color: #fff; }
+  .tab-content { display: none; }
+  .tab-content.ativo { display: block; }
+
+  /* Contadores */
   .counters { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .counter { background: #fff; border-radius: 8px; padding: 16px 24px; flex: 1; min-width: 160px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
   .counter .num { font-size: 2rem; font-weight: 700; color: #402B16; }
   .counter .lbl { font-size: .83rem; color: #888; margin-top: 2px; }
+
+  /* Filtros */
   .filtros { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.08); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
   .filtros label { font-size: .82rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
   .filtros input, .filtros select { padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .88rem; min-width: 160px; }
   .filtros input:focus, .filtros select:focus { outline: none; border-color: #402B16; }
+
+  /* Botões */
   .btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
   .btn:hover { opacity: .85; }
-  .btn-filtrar  { background: #402B16; color: #fff; }
+  .btn-principal { background: #402B16; color: #fff; }
   .btn-limpar   { background: #eee; color: #555; }
   .btn-csv      { background: #1e8449; color: #fff; }
   .btn-cert     { background: #8e44ad; color: #fff; }
   .btn-ver      { background: #1a5276; color: #fff; padding: 4px 10px; font-size: .78rem; }
   .btn-cert-ind { background: #7d3c98; color: #fff; padding: 4px 10px; font-size: .78rem; }
   .btn-excluir  { background: #c0392b; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-salvar   { background: #402B16; color: #fff; }
+  .btn-upload   { background: #1a5276; color: #fff; }
+
   .acoes { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
   .msg-acao { font-size: .88rem; color: #555; }
+
+  /* Tabela */
   .tbl-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
   table { width: 100%; border-collapse: collapse; font-size: .84rem; }
   thead th { background: #402B16; color: #fff; padding: 10px 12px; text-align: left; white-space: nowrap; }
@@ -45,41 +64,59 @@
   .acoes-cell { display: flex; gap: 6px; align-items: center; }
 
   /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.55); z-index: 1000;
-    align-items: center; justify-content: center; padding: 20px;
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.aberto { display: flex; }
-  .modal {
-    background: #fff; border-radius: 10px; max-width: 760px; width: 100%;
-    max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
-  }
-  .modal-header {
-    background: #402B16; color: #fff; padding: 16px 20px;
-    border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 1;
-  }
+  .modal { background: #fff; border-radius: 10px; max-width: 760px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25); }
+  .modal-header { background: #402B16; color: #fff; padding: 16px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1; }
   .modal-header h2 { font-size: 1rem; }
   .modal-close { background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; line-height: 1; }
   .modal-close:hover { opacity: .7; }
   .modal-body { padding: 20px; }
   .modal-section { margin-bottom: 18px; }
-  .modal-section-title {
-    font-size: .75rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .6px; color: #402B16; margin-bottom: 10px;
-    padding-bottom: 4px; border-bottom: 1.5px solid #f5ede4;
-  }
+  .modal-section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #402B16; margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1.5px solid #f5ede4; }
   .modal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
   .modal-campo { background: #f9fafb; border-radius: 6px; padding: 8px 12px; }
   .modal-campo .label { font-size: .72rem; color: #888; margin-bottom: 2px; }
   .modal-campo .valor { font-size: .88rem; color: #222; font-weight: 500; word-break: break-word; }
   .modal-campo .valor.mono { font-family: monospace; }
   .modal-campo-full { grid-column: 1 / -1; }
-  .badge-modal-sim { background: #d5f5e3; color: #1e8449; }
-  .badge-modal-nao { background: #fdecea; color: #c0392b; }
-  .badge-modal-env { background: #d2b4de; color: #6c3483; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Seção Certificado */
+  .card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  .card h2 { font-size: 1rem; color: #402B16; margin-bottom: 4px; }
+  .card p.sub { font-size: .83rem; color: #888; margin-bottom: 20px; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: .82rem; font-weight: 600; color: #555; }
+  .form-group input[type=number], .form-group input[type=color], .form-group input[type=text] {
+    padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .88rem;
+  }
+  .form-group input[type=color] { padding: 2px 4px; width: 56px; height: 36px; cursor: pointer; }
+  .form-group input:focus { outline: none; border-color: #402B16; }
+  .form-group small { font-size: .75rem; color: #999; }
+
+  /* Upload área */
+  .upload-area {
+    border: 2px dashed #c4a98a; border-radius: 8px; padding: 32px 20px;
+    text-align: center; cursor: pointer; transition: all .2s; background: #fdf9f5;
+    margin-bottom: 16px;
+  }
+  .upload-area:hover, .upload-area.drag { border-color: #402B16; background: #f5ede4; }
+  .upload-area p { color: #888; font-size: .9rem; margin-top: 8px; }
+  .upload-area strong { color: #402B16; }
+  #input-arquivo { display: none; }
+
+  /* Preview da arte */
+  .arte-preview { margin-top: 16px; }
+  .arte-preview img { max-width: 100%; border-radius: 6px; border: 2px solid #e0d0c0; }
+  .arte-preview p { font-size: .8rem; color: #888; margin-top: 6px; }
+
+  .alerta { padding: 12px 16px; border-radius: 6px; font-size: .88rem; margin-bottom: 16px; }
+  .alerta-info    { background: #d6eaf8; color: #1a5276; }
+  .alerta-sucesso { background: #d5f5e3; color: #1e8449; }
+  .alerta-erro    { background: #fdecea; color: #c0392b; }
+  .alerta-aviso   { background: #fef9e7; color: #9a7d0a; border: 1px solid #f9e79f; }
 </style>
 </head>
 <body>
@@ -89,82 +126,162 @@
 </header>
 
 <div class="container">
-  <div class="counters" id="counters">
-    <div class="counter"><div class="num" id="cnt-total">—</div><div class="lbl">Total de inscritos</div></div>
-    <div class="counter"><div class="num" id="cnt-cert">—</div><div class="lbl">Certificados enviados</div></div>
-    <div class="counter"><div class="num" id="cnt-pend">—</div><div class="lbl">Certificados pendentes</div></div>
+
+  <!-- Abas -->
+  <div class="tabs">
+    <button class="tab ativo" data-tab="inscritos">👥 Inscritos</button>
+    <button class="tab" data-tab="certificado">🎓 Certificado</button>
   </div>
 
-  <div class="filtros">
-    <div><label>Busca (nome, e-mail, CPF)</label><input type="text" id="f-busca" placeholder="Digite para buscar..."></div>
-    <div><label>Estado (UF)</label>
-      <select id="f-uf">
-        <option value="">Todos</option>
-        <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-        <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-        <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-        <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-        <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-        <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-        <option>SP</option><option>SE</option><option>TO</option>
-      </select>
+  <!-- ── ABA INSCRITOS ── -->
+  <div class="tab-content ativo" id="tab-inscritos">
+
+    <div class="counters">
+      <div class="counter"><div class="num" id="cnt-total">—</div><div class="lbl">Total de inscritos</div></div>
+      <div class="counter"><div class="num" id="cnt-cert">—</div><div class="lbl">Certificados enviados</div></div>
+      <div class="counter"><div class="num" id="cnt-pend">—</div><div class="lbl">Certificados pendentes</div></div>
     </div>
-    <div><label>Área de atuação</label>
-      <select id="f-area">
-        <option value="">Todas</option>
-        <option>Saúde</option><option>Assistência Social</option>
-        <option>Educação</option><option>Esporte</option><option>Trabalho</option>
-      </select>
+
+    <div class="filtros">
+      <div><label>Busca (nome, e-mail, CPF)</label><input type="text" id="f-busca" placeholder="Digite para buscar..."></div>
+      <div><label>Estado (UF)</label>
+        <select id="f-uf">
+          <option value="">Todos</option>
+          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+          <option>SP</option><option>SE</option><option>TO</option>
+        </select>
+      </div>
+      <div><label>Área de atuação</label>
+        <select id="f-area">
+          <option value="">Todas</option>
+          <option>Saúde</option><option>Assistência Social</option>
+          <option>Educação</option><option>Esporte</option><option>Trabalho</option>
+        </select>
+      </div>
+      <div><label>Certificado</label>
+        <select id="f-cert">
+          <option value="">Todos</option>
+          <option value="0">Não enviados</option>
+          <option value="1">Enviados</option>
+        </select>
+      </div>
+      <button class="btn btn-principal" id="btn-filtrar">Filtrar</button>
+      <button class="btn btn-limpar"    id="btn-limpar">Limpar</button>
     </div>
-    <div><label>Certificado</label>
-      <select id="f-cert">
-        <option value="">Todos</option>
-        <option value="0">Não enviados</option>
-        <option value="1">Enviados</option>
-      </select>
+
+    <div class="acoes">
+      <button class="btn btn-csv"  id="btn-csv">⬇ Exportar CSV</button>
+      <button class="btn btn-cert" id="btn-cert-todos">Enviar certificados para todos</button>
+      <span class="msg-acao" id="msg-acao"></span>
     </div>
-    <button class="btn btn-filtrar" id="btn-filtrar">Filtrar</button>
-    <button class="btn btn-limpar"  id="btn-limpar">Limpar</button>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Nome</th><th>CPF</th><th>E-mail</th>
+            <th>UF</th><th>Área</th><th>PCD</th><th>Certificado</th><th>Inscrito em</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <div class="acoes">
-    <button class="btn btn-csv"  id="btn-csv">⬇ Exportar CSV</button>
-    <button class="btn btn-cert" id="btn-cert-todos">Enviar certificados para todos</button>
-    <span class="msg-acao" id="msg-acao"></span>
-  </div>
+  <!-- ── ABA CERTIFICADO ── -->
+  <div class="tab-content" id="tab-certificado">
 
-  <div class="tbl-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th><th>Nome</th><th>CPF</th><th>E-mail</th>
-          <th>UF</th><th>Área</th><th>PCD</th><th>Certificado</th><th>Inscrito em</th><th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-</div>
+    <!-- Upload da arte -->
+    <div class="card">
+      <h2>Arte do Certificado</h2>
+      <p class="sub">Envie a arte em JPG ou PNG (máx. 4 MB). Deixe um espaço em branco onde o nome será inserido automaticamente.</p>
+
+      <div id="msg-upload"></div>
+
+      <div class="upload-area" id="upload-area">
+        <div style="font-size:2.5rem">🖼️</div>
+        <strong>Clique para selecionar</strong> ou arraste o arquivo aqui
+        <p>JPG ou PNG · Máximo 4 MB · Tamanho recomendado: A4 paisagem (3508 × 2480 px)</p>
+      </div>
+      <input type="file" id="input-arquivo" accept="image/jpeg,image/png">
+
+      <div class="arte-preview" id="arte-preview" style="display:none">
+        <p><strong>Arte atual:</strong></p>
+        <img id="arte-img" src="" alt="Arte do certificado">
+        <p id="arte-url-txt"></p>
+      </div>
+    </div>
+
+    <!-- Posicionamento do nome -->
+    <div class="card">
+      <h2>Posição do Nome no Certificado</h2>
+      <p class="sub">
+        O nome é centralizado horizontalmente. Ajuste a posição vertical (Y) do nome.<br>
+        O documento é A4 paisagem: altura de 595 pontos (0 = base, 595 = topo). Valor típico: <strong>300 a 350</strong>.
+      </p>
+
+      <div id="msg-config"></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Posição Y do nome (pontos)</label>
+          <input type="number" id="cfg-nome-y" value="310" min="50" max="550" step="5">
+          <small>0 = rodapé · 595 = topo · recomendado: 280–370</small>
+        </div>
+        <div class="form-group">
+          <label>Tamanho da fonte (pt)</label>
+          <input type="number" id="cfg-nome-tam" value="40" min="16" max="80" step="2">
+        </div>
+        <div class="form-group">
+          <label>Cor do nome</label>
+          <input type="color" id="cfg-nome-cor" value="#1a1a1a">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-salvar" id="btn-salvar-config">Salvar configurações</button>
+        <button class="btn btn-cert" id="btn-cert-teste">Enviar certificado de teste para mim</button>
+        <span id="msg-cert-cfg" style="font-size:.88rem;color:#555"></span>
+      </div>
+    </div>
+
+    <div class="card" style="background:#fef9e7;border:1px solid #f9e79f">
+      <h2 style="color:#9a7d0a">⚠ Pré-requisito no Supabase</h2>
+      <p class="sub" style="color:#7d6608">Se ainda não fez, execute este SQL no Supabase (SQL Editor) e crie o bucket <strong>templates</strong> (público) em Storage:</p>
+      <pre style="background:#fff;padding:12px;border-radius:6px;font-size:.82rem;overflow-x:auto">CREATE TABLE IF NOT EXISTS configuracoes (
+  chave TEXT PRIMARY KEY,
+  valor TEXT,
+  atualizado_em TIMESTAMPTZ DEFAULT NOW()
+);</pre>
+    </div>
+
+  </div><!-- /tab-certificado -->
+
+</div><!-- /container -->
 
 <!-- Modal detalhes -->
 <div class="modal-overlay" id="modal-overlay">
-  <div class="modal" id="modal">
+  <div class="modal">
     <div class="modal-header">
       <h2 id="modal-titulo">Detalhes do Inscrito</h2>
       <button class="modal-close" id="modal-fechar">&times;</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
-      <button class="btn btn-excluir" id="modal-btn-excluir">Excluir inscrição</button>
+      <button class="btn btn-excluir"  id="modal-btn-excluir">Excluir inscrição</button>
       <button class="btn btn-cert-ind" id="modal-btn-cert">Enviar certificado</button>
-      <button class="btn btn-limpar" id="modal-btn-fechar2">Fechar</button>
+      <button class="btn btn-limpar"   id="modal-btn-fechar2">Fechar</button>
     </div>
   </div>
 </div>
 
 <script>
 const token = () => sessionStorage.getItem('admin_token');
-
 if (!token()) window.location.href = '/admin/login.html';
 
 document.getElementById('btn-sair').addEventListener('click', () => {
@@ -175,50 +292,49 @@ document.getElementById('btn-sair').addEventListener('click', () => {
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` };
 }
-
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function fmtData(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
 }
-
 function fmtDataNasc(s) {
   if (!s) return '—';
   const [y, m, d] = s.split('-');
   return `${d}/${m}/${y}`;
 }
-
 function arrLabel(v) {
   try { const a = JSON.parse(v); return Array.isArray(a) && a.length ? a.join(', ') : '—'; }
-  catch(e) { return v || '—'; }
+  catch { return v || '—'; }
 }
-
-function simNao(v) {
-  return v
-    ? '<span class="badge badge-sim">Sim</span>'
-    : '<span class="badge badge-nao">Não</span>';
-}
-
 function campo(label, valor, full = false, mono = false) {
   const cls = 'modal-campo' + (full ? ' modal-campo-full' : '');
   const vcls = 'valor' + (mono ? ' mono' : '');
-  return `<div class="${cls}">
-    <div class="label">${label}</div>
-    <div class="${vcls}">${valor || '—'}</div>
-  </div>`;
+  return `<div class="${cls}"><div class="label">${label}</div><div class="${vcls}">${valor || '—'}</div></div>`;
 }
+
+// ─── Abas ────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('ativo'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('ativo'));
+    tab.classList.add('ativo');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('ativo');
+    if (tab.dataset.tab === 'certificado') carregarConfig();
+  });
+});
 
 // ─── Lista de inscritos ───────────────────────────────────
 let dadosAtual = [];
 
 async function carregarDados(params = {}) {
-  const qs = new URLSearchParams(params).toString();
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== ''))
+  ).toString();
   try {
-    const resp = await fetch(`/api/admin/inscritos?${qs}`, { headers: authHeaders() });
+    const resp = await fetch(`/api/admin/inscritos${qs ? '?' + qs : ''}`, { headers: authHeaders() });
     if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
     const json = await resp.json();
     if (!json.success) return;
@@ -226,7 +342,6 @@ async function carregarDados(params = {}) {
     document.getElementById('cnt-total').textContent = json.total;
     document.getElementById('cnt-cert').textContent  = json.total_cert;
     document.getElementById('cnt-pend').textContent  = json.total - json.total_cert;
-
     dadosAtual = json.dados;
 
     const tbody = document.getElementById('tbody');
@@ -235,7 +350,7 @@ async function carregarDados(params = {}) {
       return;
     }
     tbody.innerHTML = json.dados.map(ins => `
-      <tr data-id="${ins.id}">
+      <tr>
         <td>${ins.id}</td>
         <td>${esc(ins.nome_social || ins.nome_completo)}</td>
         <td style="font-family:monospace">${esc(ins.cpf_parcial)}</td>
@@ -247,154 +362,22 @@ async function carregarDados(params = {}) {
         <td>${fmtData(ins.criado_em)}</td>
         <td>
           <div class="acoes-cell">
-            <button class="btn btn-ver"       data-id="${ins.id}">Ver</button>
-            <button class="btn btn-cert-ind"  data-id="${ins.id}">Cert.</button>
-            <button class="btn btn-excluir"   data-id="${ins.id}">Excluir</button>
+            <button class="btn btn-ver"      data-id="${ins.id}">Ver</button>
+            <button class="btn btn-cert-ind" data-id="${ins.id}">Cert.</button>
+            <button class="btn btn-excluir"  data-id="${ins.id}">Excluir</button>
           </div>
         </td>
-      </tr>
-    `).join('');
+      </tr>`).join('');
 
-    document.querySelectorAll('.btn-ver').forEach(btn =>
-      btn.addEventListener('click', () => abrirModal(parseInt(btn.dataset.id)))
-    );
-    document.querySelectorAll('.btn-cert-ind').forEach(btn =>
-      btn.addEventListener('click', () => enviarCert({ modo: 'individual', id: parseInt(btn.dataset.id) }))
-    );
-    document.querySelectorAll('.btn-excluir').forEach(btn =>
-      btn.addEventListener('click', () => excluirInscrito(parseInt(btn.dataset.id)))
-    );
-
-  } catch(e) {
-    console.error(e);
-  }
+    document.querySelectorAll('.btn-ver').forEach(b =>
+      b.addEventListener('click', () => abrirModal(parseInt(b.dataset.id))));
+    document.querySelectorAll('.btn-cert-ind').forEach(b =>
+      b.addEventListener('click', () => enviarCert({ modo: 'individual', id: parseInt(b.dataset.id) })));
+    document.querySelectorAll('.btn-excluir').forEach(b =>
+      b.addEventListener('click', () => excluirInscrito(parseInt(b.dataset.id))));
+  } catch(e) { console.error(e); }
 }
 
-// ─── Modal detalhes ───────────────────────────────────────
-let modalIdAtual = null;
-
-function abrirModal(id) {
-  const ins = dadosAtual.find(d => d.id === id);
-  if (!ins) return;
-  modalIdAtual = id;
-
-  document.getElementById('modal-titulo').textContent =
-    `#${ins.id} — ${ins.nome_social || ins.nome_completo}`;
-
-  const body = document.getElementById('modal-body');
-  body.innerHTML = `
-    <div class="modal-section">
-      <div class="modal-section-title">Identificação</div>
-      <div class="modal-grid">
-        ${campo('Nome completo', esc(ins.nome_completo), true)}
-        ${ins.nome_social ? campo('Nome social', esc(ins.nome_social), true) : ''}
-        ${campo('CPF', esc(ins.cpf), false, true)}
-        ${campo('Data de nascimento', fmtDataNasc(ins.data_nascimento))}
-        ${campo('Identidade de gênero', esc(arrLabel(ins.identidade_genero)))}
-        ${ins.genero_outro ? campo('Gênero (outro)', esc(ins.genero_outro)) : ''}
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">Contato</div>
-      <div class="modal-grid">
-        ${campo('E-mail', esc(ins.email))}
-        ${campo('Telefone', esc(ins.telefone))}
-        ${campo('UF', esc(ins.uf))}
-        ${campo('Município', esc(ins.municipio))}
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">Perfil Profissional</div>
-      <div class="modal-grid">
-        ${campo('Vínculo Pestalozzi', ins.vinculo_pestalozzi ? 'Sim' : 'Não')}
-        ${campo('Formação', esc(ins.formacao))}
-        ${campo('Área de atuação', esc(arrLabel(ins.area_atuacao)), true)}
-        ${campo('Como soube do evento', esc(arrLabel(ins.como_soube)), true)}
-        ${ins.como_soube_outro ? campo('Como soube (outro)', esc(ins.como_soube_outro)) : ''}
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">Acessibilidade e Alimentação</div>
-      <div class="modal-grid">
-        ${campo('PCD', ins.pcd ? 'Sim' : 'Não')}
-        ${ins.pcd ? campo('Deficiência', esc(ins.pcd_descricao)) : ''}
-        ${ins.pcd ? campo('Recurso de acessibilidade', esc(ins.pcd_recurso)) : ''}
-        ${campo('Restrição alimentar', esc(arrLabel(ins.restricao_alimentar)))}
-        ${ins.restricao_outro ? campo('Restrição (outro)', esc(ins.restricao_outro)) : ''}
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">Termos e Certificado</div>
-      <div class="modal-grid">
-        ${campo('Aceite LGPD', ins.aceite_lgpd ? 'Sim' : 'Não')}
-        ${campo('Autorização uso de imagem', ins.aceite_imagem ? 'Sim' : 'Não')}
-        ${campo('Certificado enviado', ins.certificado_enviado ? 'Sim' : 'Não')}
-        ${ins.certificado_enviado_em ? campo('Certificado enviado em', fmtData(ins.certificado_enviado_em)) : ''}
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">Dados do sistema</div>
-      <div class="modal-grid">
-        ${campo('ID', ins.id)}
-        ${campo('Inscrito em', fmtData(ins.criado_em))}
-        ${campo('Hash', ins.hash, true, true)}
-      </div>
-    </div>
-  `;
-
-  document.getElementById('modal-overlay').classList.add('aberto');
-}
-
-function fecharModal() {
-  document.getElementById('modal-overlay').classList.remove('aberto');
-  modalIdAtual = null;
-}
-
-document.getElementById('modal-fechar').addEventListener('click', fecharModal);
-document.getElementById('modal-btn-fechar2').addEventListener('click', fecharModal);
-document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-overlay')) fecharModal();
-});
-
-document.getElementById('modal-btn-cert').addEventListener('click', () => {
-  if (modalIdAtual) enviarCert({ modo: 'individual', id: modalIdAtual });
-});
-document.getElementById('modal-btn-excluir').addEventListener('click', () => {
-  if (modalIdAtual) excluirInscrito(modalIdAtual, true);
-});
-
-// ─── Excluir inscrito ─────────────────────────────────────
-async function excluirInscrito(id, viaModal = false) {
-  const ins = dadosAtual.find(d => d.id === id);
-  const nome = ins ? (ins.nome_social || ins.nome_completo) : `#${id}`;
-  if (!confirm(`Excluir definitivamente a inscrição de "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
-
-  try {
-    const resp = await fetch('/api/admin/deletar', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ id })
-    });
-    const json = await resp.json();
-    if (json.success) {
-      if (viaModal) fecharModal();
-      document.getElementById('msg-acao').textContent = `Inscrição de "${nome}" removida.`;
-      setTimeout(() => { document.getElementById('msg-acao').textContent = ''; }, 3000);
-      carregarDados(getParams());
-    } else {
-      alert('Erro ao excluir: ' + (json.mensagem || 'Tente novamente.'));
-    }
-  } catch(e) {
-    alert('Erro de conexão.');
-  }
-}
-
-// ─── Filtros ──────────────────────────────────────────────
 function getParams() {
   return {
     busca: document.getElementById('f-busca').value,
@@ -406,31 +389,127 @@ function getParams() {
 
 document.getElementById('btn-filtrar').addEventListener('click', () => carregarDados(getParams()));
 document.getElementById('btn-limpar').addEventListener('click', () => {
-  document.getElementById('f-busca').value = '';
-  document.getElementById('f-uf').value    = '';
-  document.getElementById('f-area').value  = '';
-  document.getElementById('f-cert').value  = '';
+  ['f-busca','f-uf','f-area','f-cert'].forEach(id => { document.getElementById(id).value = ''; });
   carregarDados();
 });
-
 let debounce;
 document.getElementById('f-busca').addEventListener('input', () => {
   clearTimeout(debounce);
   debounce = setTimeout(() => carregarDados(getParams()), 400);
 });
 
-// ─── CSV ──────────────────────────────────────────────────
+// CSV (respeita filtros ativos)
 document.getElementById('btn-csv').addEventListener('click', async () => {
-  const resp = await fetch('/api/admin/exportar', { headers: authHeaders() });
+  const p = getParams();
+  const qs = new URLSearchParams(Object.fromEntries(Object.entries(p).filter(([,v]) => v !== ''))).toString();
+  const resp = await fetch(`/api/admin/exportar${qs ? '?' + qs : ''}`, { headers: authHeaders() });
   if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
+  const a = document.createElement('a'); a.href = url;
   a.download = `inscritos_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  a.click(); URL.revokeObjectURL(url);
 });
+
+// ─── Modal detalhes ───────────────────────────────────────
+let modalIdAtual = null;
+
+function abrirModal(id) {
+  const ins = dadosAtual.find(d => d.id === id);
+  if (!ins) return;
+  modalIdAtual = id;
+  document.getElementById('modal-titulo').textContent = `#${ins.id} — ${ins.nome_social || ins.nome_completo}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-title">Identificação</div>
+      <div class="modal-grid">
+        ${campo('Nome completo', esc(ins.nome_completo), true)}
+        ${ins.nome_social ? campo('Nome social', esc(ins.nome_social), true) : ''}
+        ${campo('CPF', esc(ins.cpf), false, true)}
+        ${campo('Data de nascimento', fmtDataNasc(ins.data_nascimento))}
+        ${campo('Identidade de gênero', esc(arrLabel(ins.identidade_genero)))}
+        ${ins.genero_outro ? campo('Gênero (outro)', esc(ins.genero_outro)) : ''}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Contato</div>
+      <div class="modal-grid">
+        ${campo('E-mail', esc(ins.email))}
+        ${campo('Telefone', esc(ins.telefone))}
+        ${campo('UF', esc(ins.uf))}
+        ${campo('Município', esc(ins.municipio))}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Perfil Profissional</div>
+      <div class="modal-grid">
+        ${campo('Vínculo Pestalozzi', ins.vinculo_pestalozzi ? 'Sim' : 'Não')}
+        ${campo('Formação', esc(ins.formacao))}
+        ${campo('Área de atuação', esc(arrLabel(ins.area_atuacao)), true)}
+        ${campo('Como soube do evento', esc(arrLabel(ins.como_soube)), true)}
+        ${ins.como_soube_outro ? campo('Como soube (outro)', esc(ins.como_soube_outro)) : ''}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Acessibilidade e Alimentação</div>
+      <div class="modal-grid">
+        ${campo('PCD', ins.pcd ? 'Sim' : 'Não')}
+        ${ins.pcd ? campo('Deficiência', esc(ins.pcd_descricao)) : ''}
+        ${ins.pcd ? campo('Recurso de acessibilidade', esc(ins.pcd_recurso)) : ''}
+        ${campo('Restrição alimentar', esc(arrLabel(ins.restricao_alimentar)))}
+        ${ins.restricao_outro ? campo('Restrição (outro)', esc(ins.restricao_outro)) : ''}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Termos e Certificado</div>
+      <div class="modal-grid">
+        ${campo('Aceite LGPD', ins.aceite_lgpd ? 'Sim' : 'Não')}
+        ${campo('Autorização uso de imagem', ins.aceite_imagem ? 'Sim' : 'Não')}
+        ${campo('Certificado enviado', ins.certificado_enviado ? 'Sim' : 'Não')}
+        ${ins.certificado_enviado_em ? campo('Enviado em', fmtData(ins.certificado_enviado_em)) : ''}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Dados do sistema</div>
+      <div class="modal-grid">
+        ${campo('ID', ins.id)} ${campo('Inscrito em', fmtData(ins.criado_em))}
+        ${campo('Hash', ins.hash, true, true)}
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('aberto');
+}
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('aberto');
+  modalIdAtual = null;
+}
+document.getElementById('modal-fechar').addEventListener('click', fecharModal);
+document.getElementById('modal-btn-fechar2').addEventListener('click', fecharModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) fecharModal();
+});
+document.getElementById('modal-btn-cert').addEventListener('click', () => {
+  if (modalIdAtual) enviarCert({ modo: 'individual', id: modalIdAtual });
+});
+document.getElementById('modal-btn-excluir').addEventListener('click', () => {
+  if (modalIdAtual) excluirInscrito(modalIdAtual, true);
+});
+
+// ─── Excluir ─────────────────────────────────────────────
+async function excluirInscrito(id, viaModal = false) {
+  const ins = dadosAtual.find(d => d.id === id);
+  const nome = ins ? (ins.nome_social || ins.nome_completo) : `#${id}`;
+  if (!confirm(`Excluir definitivamente a inscrição de "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    const resp = await fetch('/api/admin/deletar', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ id }) });
+    const json = await resp.json();
+    if (json.success) {
+      if (viaModal) fecharModal();
+      document.getElementById('msg-acao').textContent = `Inscrição de "${nome}" removida.`;
+      setTimeout(() => { document.getElementById('msg-acao').textContent = ''; }, 3000);
+      carregarDados(getParams());
+    } else { alert('Erro: ' + (json.mensagem || 'Tente novamente.')); }
+  } catch { alert('Erro de conexão.'); }
+}
 
 // ─── Certificados ─────────────────────────────────────────
 const msgAcao = document.getElementById('msg-acao');
@@ -438,23 +517,134 @@ async function enviarCert(payload) {
   if (!confirm(payload.modo === 'todos'
     ? 'Enviar certificados para TODOS os inscritos ainda sem certificado?'
     : 'Enviar certificado para este inscrito?')) return;
-
   msgAcao.textContent = 'Enviando...';
   try {
-    const resp = await fetch('/api/admin/certificado', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(payload)
-    });
+    const resp = await fetch('/api/admin/certificado', { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
     const json = await resp.json();
     msgAcao.textContent = json.mensagem || (json.success ? 'Concluído.' : 'Erro.');
     if (json.success) setTimeout(() => { carregarDados(getParams()); msgAcao.textContent = ''; }, 2000);
-  } catch(e) {
-    msgAcao.textContent = 'Erro de conexão.';
-  }
+  } catch { msgAcao.textContent = 'Erro de conexão.'; }
+}
+document.getElementById('btn-cert-todos').addEventListener('click', () => enviarCert({ modo: 'todos' }));
+
+// ─── Aba Certificado ──────────────────────────────────────
+
+// Carrega configurações salvas
+async function carregarConfig() {
+  try {
+    const resp = await fetch('/api/admin/cert-config', { headers: authHeaders() });
+    const json = await resp.json();
+    if (!json.success) return;
+    const c = json.config;
+    if (c.cert_nome_y)       document.getElementById('cfg-nome-y').value   = c.cert_nome_y;
+    if (c.cert_nome_tamanho) document.getElementById('cfg-nome-tam').value = c.cert_nome_tamanho;
+    if (c.cert_nome_cor)     document.getElementById('cfg-nome-cor').value = c.cert_nome_cor;
+    if (c.cert_arte_url) mostrarPreviewUrl(c.cert_arte_url);
+  } catch {}
 }
 
-document.getElementById('btn-cert-todos').addEventListener('click', () => enviarCert({ modo: 'todos' }));
+function mostrarPreviewUrl(url) {
+  const prev = document.getElementById('arte-preview');
+  document.getElementById('arte-img').src = url + '?t=' + Date.now();
+  document.getElementById('arte-url-txt').textContent = url;
+  prev.style.display = 'block';
+}
+
+function msgUpload(tipo, texto) {
+  const el = document.getElementById('msg-upload');
+  el.className = 'alerta alerta-' + tipo;
+  el.textContent = texto;
+  el.style.display = 'block';
+}
+function msgCfg(tipo, texto) {
+  const el = document.getElementById('msg-config');
+  el.className = 'alerta alerta-' + tipo;
+  el.textContent = texto;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// Upload de arquivo
+const uploadArea = document.getElementById('upload-area');
+const inputArquivo = document.getElementById('input-arquivo');
+
+uploadArea.addEventListener('click', () => inputArquivo.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processarArquivo(file);
+});
+inputArquivo.addEventListener('change', () => {
+  if (inputArquivo.files[0]) processarArquivo(inputArquivo.files[0]);
+});
+
+function processarArquivo(file) {
+  if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    return msgUpload('erro', 'Formato inválido. Envie JPG ou PNG.');
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    return msgUpload('erro', 'Arquivo muito grande. Máximo: 4 MB.');
+  }
+  msgUpload('info', 'Enviando arquivo...');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const resp = await fetch('/api/admin/cert-upload', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ dados: base64, tipo: file.type }),
+      });
+      const json = await resp.json();
+      if (json.success) {
+        msgUpload('sucesso', '✅ Arte enviada com sucesso!');
+        mostrarPreviewUrl(json.url);
+      } else {
+        msgUpload('erro', 'Erro: ' + (json.mensagem || 'Tente novamente.'));
+      }
+    } catch { msgUpload('erro', 'Erro de conexão.'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Salvar configurações
+document.getElementById('btn-salvar-config').addEventListener('click', async () => {
+  const payload = {
+    cert_nome_y:        document.getElementById('cfg-nome-y').value,
+    cert_nome_tamanho:  document.getElementById('cfg-nome-tam').value,
+    cert_nome_cor:      document.getElementById('cfg-nome-cor').value,
+  };
+  try {
+    const resp = await fetch('/api/admin/cert-config', { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
+    const json = await resp.json();
+    msgCfg(json.success ? 'sucesso' : 'erro', json.mensagem || (json.success ? 'Salvo!' : 'Erro.'));
+  } catch { msgCfg('erro', 'Erro de conexão.'); }
+});
+
+// Enviar certificado de teste (para o próprio admin — usa o primeiro inscrito como preview)
+document.getElementById('btn-cert-teste').addEventListener('click', async () => {
+  const msgEl = document.getElementById('msg-cert-cfg');
+  if (!dadosAtual.length) {
+    // Carrega ao menos um inscrito para teste
+    await carregarDados();
+  }
+  if (!dadosAtual.length) {
+    msgEl.textContent = 'Nenhum inscrito disponível para teste.';
+    return;
+  }
+  if (!confirm(`Enviar certificado de teste para: ${dadosAtual[0].email}?`)) return;
+  msgEl.textContent = 'Enviando...';
+  try {
+    const resp = await fetch('/api/admin/certificado', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ modo: 'individual', id: dadosAtual[0].id }),
+    });
+    const json = await resp.json();
+    msgEl.textContent = json.mensagem || (json.success ? 'Enviado!' : 'Erro.');
+  } catch { msgEl.textContent = 'Erro de conexão.'; }
+});
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();

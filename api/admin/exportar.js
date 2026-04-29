@@ -27,7 +27,17 @@ function csvCell(v) {
 module.exports = async (req, res) => {
   if (!autenticar(req)) return res.status(401).json({ success: false, mensagem: 'Não autorizado.' });
 
-  const { data, error } = await supabase.from('inscritos').select('*').order('criado_em', { ascending: true });
+  // Aceita os mesmos filtros da listagem
+  const { busca = '', uf = '', area = '', cert = '' } = req.query;
+
+  let query = supabase.from('inscritos').select('*').order('criado_em', { ascending: true });
+  if (busca) query = query.or(`nome_completo.ilike.%${busca}%,nome_social.ilike.%${busca}%,email.ilike.%${busca}%,cpf.ilike.%${busca}%`);
+  if (uf)    query = query.eq('uf', uf);
+  if (area)  query = query.contains('area_atuacao', [area]);
+  if (cert === '1') query = query.eq('certificado_enviado', true);
+  if (cert === '0') query = query.eq('certificado_enviado', false);
+
+  const { data, error } = await query;
   if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao consultar banco.' });
 
   const cabecalho = [
@@ -63,7 +73,7 @@ module.exports = async (req, res) => {
     fmtData(ins.criado_em),
   ].map(csvCell).join(';'));
 
-  const csv = '\uFEFF' + [cabecalho.join(';'), ...linhas].join('\r\n');
+  const csv = '﻿' + [cabecalho.join(';'), ...linhas].join('\r\n');
   const filename = `inscritos_${new Date().toISOString().slice(0,10)}.csv`;
 
   res.setHeader('Content-Type', 'text/csv; charset=UTF-8');
