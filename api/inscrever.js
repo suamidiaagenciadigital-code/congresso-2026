@@ -130,7 +130,7 @@ module.exports = async (req, res) => {
   let qrcode_url  = null;
 
   try {
-    const qrBuffer = await QRCode.toBuffer(qr_url, { type: 'png', width: 400, margin: 2, color: { dark: '#0d3b6e' } });
+    const qrBuffer = await QRCode.toBuffer(qr_url, { type: 'png', width: 400, margin: 2, color: { dark: '#402B16' } });
     const { error: upErr } = await supabase.storage.from('qrcodes').upload(`${hash}.png`, qrBuffer, { contentType: 'image/png', upsert: true });
     if (!upErr) {
       qrcode_url = supabase.storage.from('qrcodes').getPublicUrl(`${hash}.png`).data.publicUrl;
@@ -147,7 +147,7 @@ module.exports = async (req, res) => {
   try {
     const attachments = [];
     if (qrcode_url) {
-      const qrBuf = await QRCode.toBuffer(qr_url, { type: 'png', width: 400, margin: 2, color: { dark: '#0d3b6e' } });
+      const qrBuf = await QRCode.toBuffer(qr_url, { type: 'png', width: 400, margin: 2, color: { dark: '#402B16' } });
       attachments.push({ filename: 'qrcode-credenciamento.png', content: qrBuf.toString('base64') });
     }
 
@@ -166,7 +166,7 @@ module.exports = async (req, res) => {
 
       <!-- Cabeçalho -->
       <tr>
-        <td style="background:#0d3b6e;border-radius:8px 8px 0 0;padding:24px 28px;text-align:center">
+        <td style="background:#402B16;border-radius:8px 8px 0 0;padding:24px 28px;text-align:center">
           <p style="margin:0 0 4px;color:rgba(255,255,255,.7);font-size:11px;letter-spacing:2px;text-transform:uppercase">Fenapestalozzi</p>
           <h1 style="margin:0;color:#ffffff;font-size:18px;line-height:1.4">${EVENTO_NOME}</h1>
           <p style="margin:6px 0 0;color:rgba(255,255,255,.8);font-size:13px">
@@ -210,7 +210,7 @@ module.exports = async (req, res) => {
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f2f5f9;border-radius:6px;margin-top:20px">
             <tr>
               <td style="padding:14px 18px">
-                <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#0d3b6e;text-transform:uppercase;letter-spacing:.5px">Detalhes do evento</p>
+                <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#402B16;text-transform:uppercase;letter-spacing:.5px">Detalhes do evento</p>
                 <p style="margin:3px 0;font-size:13px;color:#444">📅 <strong>Data:</strong> ${EVENTO_DATA}</p>
                 <p style="margin:3px 0;font-size:13px;color:#444">🕐 <strong>Horário:</strong> ${EVENTO_HORA}</p>
                 <p style="margin:3px 0;font-size:13px;color:#444">📍 <strong>Local:</strong> ${EVENTO_LOCAL}</p>
