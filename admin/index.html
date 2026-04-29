@@ -7,38 +7,79 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; color: #333; }
-  header { background: #1a5276; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
+  header { background: #402B16; color: #fff; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
   header h1 { font-size: 1.1rem; }
-  header a { color: #aed6f1; font-size: .85rem; text-decoration: none; cursor: pointer; }
+  header a { color: #dacabb; font-size: .85rem; text-decoration: none; cursor: pointer; }
   header a:hover { color: #fff; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 24px 20px; }
   .counters { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .counter { background: #fff; border-radius: 8px; padding: 16px 24px; flex: 1; min-width: 160px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
-  .counter .num { font-size: 2rem; font-weight: 700; color: #1a5276; }
+  .counter .num { font-size: 2rem; font-weight: 700; color: #402B16; }
   .counter .lbl { font-size: .83rem; color: #888; margin-top: 2px; }
   .filtros { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.08); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
   .filtros label { font-size: .82rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
   .filtros input, .filtros select { padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .88rem; min-width: 160px; }
-  .filtros input:focus, .filtros select:focus { outline: none; border-color: #1a5276; }
-  .btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: .88rem; font-weight: 600; cursor: pointer; }
-  .btn:hover { opacity: .88; }
-  .btn-filtrar { background: #1a5276; color: #fff; }
-  .btn-limpar  { background: #eee; color: #555; }
-  .btn-csv     { background: #1e8449; color: #fff; }
-  .btn-cert    { background: #8e44ad; color: #fff; }
-  .btn-cert-ind { background: #7d3c98; color: #fff; padding: 5px 10px; font-size: .78rem; }
+  .filtros input:focus, .filtros select:focus { outline: none; border-color: #402B16; }
+  .btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-filtrar  { background: #402B16; color: #fff; }
+  .btn-limpar   { background: #eee; color: #555; }
+  .btn-csv      { background: #1e8449; color: #fff; }
+  .btn-cert     { background: #8e44ad; color: #fff; }
+  .btn-ver      { background: #1a5276; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-cert-ind { background: #7d3c98; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-excluir  { background: #c0392b; color: #fff; padding: 4px 10px; font-size: .78rem; }
   .acoes { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
   .msg-acao { font-size: .88rem; color: #555; }
   .tbl-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
   table { width: 100%; border-collapse: collapse; font-size: .84rem; }
-  thead th { background: #1a5276; color: #fff; padding: 10px 12px; text-align: left; white-space: nowrap; }
+  thead th { background: #402B16; color: #fff; padding: 10px 12px; text-align: left; white-space: nowrap; }
   tbody tr:nth-child(even) { background: #f9fafb; }
-  tbody td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tbody tr:hover { background: #f5ede4; }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; white-space: nowrap; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
   .badge-sim { background: #d5f5e3; color: #1e8449; }
   .badge-nao { background: #fdecea; color: #c0392b; }
   .badge-env { background: #d2b4de; color: #6c3483; }
   .vazio { text-align: center; padding: 40px; color: #aaa; }
+  .acoes-cell { display: flex; gap: 6px; align-items: center; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.aberto { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px; max-width: 760px; width: 100%;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  }
+  .modal-header {
+    background: #402B16; color: #fff; padding: 16px 20px;
+    border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .modal-header h2 { font-size: 1rem; }
+  .modal-close { background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; line-height: 1; }
+  .modal-close:hover { opacity: .7; }
+  .modal-body { padding: 20px; }
+  .modal-section { margin-bottom: 18px; }
+  .modal-section-title {
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .6px; color: #402B16; margin-bottom: 10px;
+    padding-bottom: 4px; border-bottom: 1.5px solid #f5ede4;
+  }
+  .modal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .modal-campo { background: #f9fafb; border-radius: 6px; padding: 8px 12px; }
+  .modal-campo .label { font-size: .72rem; color: #888; margin-bottom: 2px; }
+  .modal-campo .valor { font-size: .88rem; color: #222; font-weight: 500; word-break: break-word; }
+  .modal-campo .valor.mono { font-family: monospace; }
+  .modal-campo-full { grid-column: 1 / -1; }
+  .badge-modal-sim { background: #d5f5e3; color: #1e8449; }
+  .badge-modal-nao { background: #fdecea; color: #c0392b; }
+  .badge-modal-env { background: #d2b4de; color: #6c3483; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
 </style>
 </head>
 <body>
@@ -97,7 +138,7 @@
       <thead>
         <tr>
           <th>#</th><th>Nome</th><th>CPF</th><th>E-mail</th>
-          <th>UF</th><th>Área</th><th>PCD</th><th>Certificado</th><th>Inscrito em</th><th>Ação</th>
+          <th>UF</th><th>Área</th><th>PCD</th><th>Certificado</th><th>Inscrito em</th><th>Ações</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -105,13 +146,27 @@
   </div>
 </div>
 
+<!-- Modal detalhes -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2 id="modal-titulo">Detalhes do Inscrito</h2>
+      <button class="modal-close" id="modal-fechar">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-excluir" id="modal-btn-excluir">Excluir inscrição</button>
+      <button class="btn btn-cert-ind" id="modal-btn-cert">Enviar certificado</button>
+      <button class="btn btn-limpar" id="modal-btn-fechar2">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const token = () => sessionStorage.getItem('admin_token');
 
-// Redireciona se não logado
 if (!token()) window.location.href = '/admin/login.html';
 
-// Logout
 document.getElementById('btn-sair').addEventListener('click', () => {
   sessionStorage.removeItem('admin_token');
   window.location.href = '/admin/login.html';
@@ -131,9 +186,34 @@ function fmtData(iso) {
   return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
 }
 
-function arrLabel(v) {
-  try { const a = JSON.parse(v); return Array.isArray(a) ? a.join(', ') : v; } catch(e) { return v||''; }
+function fmtDataNasc(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
 }
+
+function arrLabel(v) {
+  try { const a = JSON.parse(v); return Array.isArray(a) && a.length ? a.join(', ') : '—'; }
+  catch(e) { return v || '—'; }
+}
+
+function simNao(v) {
+  return v
+    ? '<span class="badge badge-sim">Sim</span>'
+    : '<span class="badge badge-nao">Não</span>';
+}
+
+function campo(label, valor, full = false, mono = false) {
+  const cls = 'modal-campo' + (full ? ' modal-campo-full' : '');
+  const vcls = 'valor' + (mono ? ' mono' : '');
+  return `<div class="${cls}">
+    <div class="label">${label}</div>
+    <div class="${vcls}">${valor || '—'}</div>
+  </div>`;
+}
+
+// ─── Lista de inscritos ───────────────────────────────────
+let dadosAtual = [];
 
 async function carregarDados(params = {}) {
   const qs = new URLSearchParams(params).toString();
@@ -143,42 +223,178 @@ async function carregarDados(params = {}) {
     const json = await resp.json();
     if (!json.success) return;
 
-    // Contadores
     document.getElementById('cnt-total').textContent = json.total;
     document.getElementById('cnt-cert').textContent  = json.total_cert;
     document.getElementById('cnt-pend').textContent  = json.total - json.total_cert;
 
-    // Tabela
+    dadosAtual = json.dados;
+
     const tbody = document.getElementById('tbody');
     if (!json.dados.length) {
       tbody.innerHTML = '<tr><td colspan="10" class="vazio">Nenhum inscrito encontrado.</td></tr>';
       return;
     }
     tbody.innerHTML = json.dados.map(ins => `
-      <tr>
+      <tr data-id="${ins.id}">
         <td>${ins.id}</td>
         <td>${esc(ins.nome_social || ins.nome_completo)}</td>
         <td style="font-family:monospace">${esc(ins.cpf_parcial)}</td>
         <td>${esc(ins.email)}</td>
         <td>${esc(ins.uf||'—')}</td>
         <td>${esc(arrLabel(ins.area_atuacao))}</td>
-        <td><span class="badge ${ins.pcd?'badge-sim':'badge-nao'}">${ins.pcd?'Sim':'Não'}</span></td>
-        <td><span class="badge ${ins.certificado_enviado?'badge-env':'badge-nao'}">${ins.certificado_enviado?'Enviado':'Pendente'}</span></td>
+        <td>${ins.pcd ? '<span class="badge badge-sim">Sim</span>' : '<span class="badge badge-nao">Não</span>'}</td>
+        <td>${ins.certificado_enviado ? '<span class="badge badge-env">Enviado</span>' : '<span class="badge badge-nao">Pendente</span>'}</td>
         <td>${fmtData(ins.criado_em)}</td>
-        <td><button class="btn btn-cert-ind" data-id="${ins.id}">Certificado</button></td>
+        <td>
+          <div class="acoes-cell">
+            <button class="btn btn-ver"       data-id="${ins.id}">Ver</button>
+            <button class="btn btn-cert-ind"  data-id="${ins.id}">Cert.</button>
+            <button class="btn btn-excluir"   data-id="${ins.id}">Excluir</button>
+          </div>
+        </td>
       </tr>
     `).join('');
 
-    // Botões individuais
-    document.querySelectorAll('.btn-cert-ind').forEach(btn => {
-      btn.addEventListener('click', () => enviarCert({ modo: 'individual', id: parseInt(btn.dataset.id) }));
-    });
+    document.querySelectorAll('.btn-ver').forEach(btn =>
+      btn.addEventListener('click', () => abrirModal(parseInt(btn.dataset.id)))
+    );
+    document.querySelectorAll('.btn-cert-ind').forEach(btn =>
+      btn.addEventListener('click', () => enviarCert({ modo: 'individual', id: parseInt(btn.dataset.id) }))
+    );
+    document.querySelectorAll('.btn-excluir').forEach(btn =>
+      btn.addEventListener('click', () => excluirInscrito(parseInt(btn.dataset.id)))
+    );
 
   } catch(e) {
     console.error(e);
   }
 }
 
+// ─── Modal detalhes ───────────────────────────────────────
+let modalIdAtual = null;
+
+function abrirModal(id) {
+  const ins = dadosAtual.find(d => d.id === id);
+  if (!ins) return;
+  modalIdAtual = id;
+
+  document.getElementById('modal-titulo').textContent =
+    `#${ins.id} — ${ins.nome_social || ins.nome_completo}`;
+
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-title">Identificação</div>
+      <div class="modal-grid">
+        ${campo('Nome completo', esc(ins.nome_completo), true)}
+        ${ins.nome_social ? campo('Nome social', esc(ins.nome_social), true) : ''}
+        ${campo('CPF', esc(ins.cpf), false, true)}
+        ${campo('Data de nascimento', fmtDataNasc(ins.data_nascimento))}
+        ${campo('Identidade de gênero', esc(arrLabel(ins.identidade_genero)))}
+        ${ins.genero_outro ? campo('Gênero (outro)', esc(ins.genero_outro)) : ''}
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Contato</div>
+      <div class="modal-grid">
+        ${campo('E-mail', esc(ins.email))}
+        ${campo('Telefone', esc(ins.telefone))}
+        ${campo('UF', esc(ins.uf))}
+        ${campo('Município', esc(ins.municipio))}
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Perfil Profissional</div>
+      <div class="modal-grid">
+        ${campo('Vínculo Pestalozzi', ins.vinculo_pestalozzi ? 'Sim' : 'Não')}
+        ${campo('Formação', esc(ins.formacao))}
+        ${campo('Área de atuação', esc(arrLabel(ins.area_atuacao)), true)}
+        ${campo('Como soube do evento', esc(arrLabel(ins.como_soube)), true)}
+        ${ins.como_soube_outro ? campo('Como soube (outro)', esc(ins.como_soube_outro)) : ''}
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Acessibilidade e Alimentação</div>
+      <div class="modal-grid">
+        ${campo('PCD', ins.pcd ? 'Sim' : 'Não')}
+        ${ins.pcd ? campo('Deficiência', esc(ins.pcd_descricao)) : ''}
+        ${ins.pcd ? campo('Recurso de acessibilidade', esc(ins.pcd_recurso)) : ''}
+        ${campo('Restrição alimentar', esc(arrLabel(ins.restricao_alimentar)))}
+        ${ins.restricao_outro ? campo('Restrição (outro)', esc(ins.restricao_outro)) : ''}
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Termos e Certificado</div>
+      <div class="modal-grid">
+        ${campo('Aceite LGPD', ins.aceite_lgpd ? 'Sim' : 'Não')}
+        ${campo('Autorização uso de imagem', ins.aceite_imagem ? 'Sim' : 'Não')}
+        ${campo('Certificado enviado', ins.certificado_enviado ? 'Sim' : 'Não')}
+        ${ins.certificado_enviado_em ? campo('Certificado enviado em', fmtData(ins.certificado_enviado_em)) : ''}
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Dados do sistema</div>
+      <div class="modal-grid">
+        ${campo('ID', ins.id)}
+        ${campo('Inscrito em', fmtData(ins.criado_em))}
+        ${campo('Hash', ins.hash, true, true)}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modal-overlay').classList.add('aberto');
+}
+
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('aberto');
+  modalIdAtual = null;
+}
+
+document.getElementById('modal-fechar').addEventListener('click', fecharModal);
+document.getElementById('modal-btn-fechar2').addEventListener('click', fecharModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) fecharModal();
+});
+
+document.getElementById('modal-btn-cert').addEventListener('click', () => {
+  if (modalIdAtual) enviarCert({ modo: 'individual', id: modalIdAtual });
+});
+document.getElementById('modal-btn-excluir').addEventListener('click', () => {
+  if (modalIdAtual) excluirInscrito(modalIdAtual, true);
+});
+
+// ─── Excluir inscrito ─────────────────────────────────────
+async function excluirInscrito(id, viaModal = false) {
+  const ins = dadosAtual.find(d => d.id === id);
+  const nome = ins ? (ins.nome_social || ins.nome_completo) : `#${id}`;
+  if (!confirm(`Excluir definitivamente a inscrição de "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+
+  try {
+    const resp = await fetch('/api/admin/deletar', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ id })
+    });
+    const json = await resp.json();
+    if (json.success) {
+      if (viaModal) fecharModal();
+      document.getElementById('msg-acao').textContent = `Inscrição de "${nome}" removida.`;
+      setTimeout(() => { document.getElementById('msg-acao').textContent = ''; }, 3000);
+      carregarDados(getParams());
+    } else {
+      alert('Erro ao excluir: ' + (json.mensagem || 'Tente novamente.'));
+    }
+  } catch(e) {
+    alert('Erro de conexão.');
+  }
+}
+
+// ─── Filtros ──────────────────────────────────────────────
 function getParams() {
   return {
     busca: document.getElementById('f-busca').value,
@@ -197,14 +413,13 @@ document.getElementById('btn-limpar').addEventListener('click', () => {
   carregarDados();
 });
 
-// Busca em tempo real (debounce)
 let debounce;
 document.getElementById('f-busca').addEventListener('input', () => {
   clearTimeout(debounce);
   debounce = setTimeout(() => carregarDados(getParams()), 400);
 });
 
-// CSV
+// ─── CSV ──────────────────────────────────────────────────
 document.getElementById('btn-csv').addEventListener('click', async () => {
   const resp = await fetch('/api/admin/exportar', { headers: authHeaders() });
   if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
@@ -217,7 +432,7 @@ document.getElementById('btn-csv').addEventListener('click', async () => {
   URL.revokeObjectURL(url);
 });
 
-// Enviar certificados
+// ─── Certificados ─────────────────────────────────────────
 const msgAcao = document.getElementById('msg-acao');
 async function enviarCert(payload) {
   if (!confirm(payload.modo === 'todos'
@@ -241,7 +456,7 @@ async function enviarCert(payload) {
 
 document.getElementById('btn-cert-todos').addEventListener('click', () => enviarCert({ modo: 'todos' }));
 
-// Carregar ao abrir
+// ─── Inicializar ──────────────────────────────────────────
 carregarDados();
 </script>
 </body>
