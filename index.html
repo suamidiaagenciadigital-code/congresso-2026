@@ -3,127 +3,400 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inscrição — Congresso Fenapestalozzi 2026</title>
+<title>Inscrições — XVII Congresso Fenapestalozzi 2026</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
-  .form-wrap { max-width: 680px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 16px rgba(0,0,0,.1); padding: 32px; }
-  h1 { font-size: 1.4rem; color: #1a5276; margin-bottom: 4px; }
-  .subtitulo { color: #666; font-size: .9rem; margin-bottom: 24px; }
 
-  .progress-bar { display: flex; justify-content: space-between; margin-bottom: 28px; }
-  .step-indicator { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
-  .step-indicator::before { content: ''; position: absolute; top: 15px; left: -50%; width: 100%; height: 3px; background: #ddd; z-index: 0; }
+  :root {
+    --azul:      #0d3b6e;
+    --azul-med:  #1a5796;
+    --azul-clr:  #e8f1fb;
+    --verde:     #1b6e3f;
+    --verde-clr: #e6f4ec;
+    --cinza-bg:  #f2f5f9;
+    --borda:     #d0dae8;
+    --erro:      #c0392b;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--cinza-bg);
+    color: #2d2d2d;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  /* Cabeçalho */
+  .form-header {
+    background: var(--azul);
+    color: #fff;
+    text-align: center;
+    padding: 22px 20px 18px;
+  }
+  .form-header .subtag {
+    font-size: .78rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    opacity: .7;
+    margin-bottom: 6px;
+  }
+  .form-header h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .form-header .info-evento {
+    font-size: .84rem;
+    opacity: .85;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+  .form-header .info-evento span { display: inline-block; margin: 0 6px; }
+
+  /* Wrapper */
+  .form-wrap {
+    max-width: 700px;
+    margin: 24px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 20px rgba(0,0,0,.09);
+    padding: 28px 30px 32px;
+  }
+
+  /* Progresso */
+  .progress-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+  }
+  .step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: -50%;
+    width: 100%;
+    height: 3px;
+    background: var(--borda);
+    z-index: 0;
+  }
   .step-indicator:first-child::before { display: none; }
-  .step-circle { width: 32px; height: 32px; border-radius: 50%; background: #ddd; color: #999; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: bold; z-index: 1; transition: background .3s; }
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ddd;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .82rem;
+    font-weight: 700;
+    z-index: 1;
+    transition: background .25s, color .25s;
+  }
   .step-indicator.active .step-circle,
-  .step-indicator.done .step-circle { background: #1a5276; color: #fff; }
-  .step-indicator.done::before { background: #1a5276; }
-  .step-label { font-size: .7rem; color: #999; margin-top: 4px; text-align: center; }
-  .step-indicator.active .step-label { color: #1a5276; font-weight: bold; }
+  .step-indicator.done .step-circle  { background: var(--azul); color: #fff; }
+  .step-indicator.done::before       { background: var(--azul); }
+  .step-label {
+    font-size: .67rem;
+    color: #aaa;
+    margin-top: 5px;
+    text-align: center;
+    max-width: 60px;
+  }
+  .step-indicator.active .step-label { color: var(--azul); font-weight: 700; }
 
+  /* Etapas */
   .etapa { display: none; }
   .etapa.ativa { display: block; }
-  .etapa h2 { font-size: 1.1rem; color: #1a5276; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #eee; }
-
-  .campo { margin-bottom: 18px; }
-  .campo label { display: block; font-size: .88rem; font-weight: 600; margin-bottom: 5px; color: #444; }
-  .campo label .obrig { color: #c0392b; }
-  .campo input[type=text], .campo input[type=email], .campo input[type=date],
-  .campo input[type=tel], .campo select, .campo textarea {
-    width: 100%; padding: 10px 12px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .93rem; transition: border-color .2s;
+  .etapa h2 {
+    font-size: 1rem;
+    color: var(--azul);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--azul-clr);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: #1a5276; }
+  .etapa h2::before {
+    content: attr(data-num);
+    background: var(--azul);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: .78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  /* Linha de 2 colunas */
+  .linha-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+
+  /* Campos */
+  .campo { margin-bottom: 16px; }
+  .campo label {
+    display: block;
+    font-size: .84rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #3a3a3a;
+  }
+  .campo label .obrig { color: var(--erro); margin-left: 2px; }
+  .campo input[type=text],
+  .campo input[type=email],
+  .campo input[type=date],
+  .campo input[type=tel],
+  .campo select,
+  .campo textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1.5px solid var(--borda);
+    border-radius: 6px;
+    font-size: .9rem;
+    color: #2d2d2d;
+    background: #fff;
+    transition: border-color .2s;
+  }
+  .campo input:focus,
+  .campo select:focus,
+  .campo textarea:focus {
+    outline: none;
+    border-color: var(--azul-med);
+    box-shadow: 0 0 0 3px rgba(26,87,150,.1);
+  }
   .campo textarea { resize: vertical; min-height: 80px; }
-  .campo.erro input, .campo.erro select, .campo.erro textarea { border-color: #c0392b; }
-  .msg-erro { color: #c0392b; font-size: .8rem; margin-top: 4px; display: none; }
+  .campo.erro input,
+  .campo.erro select,
+  .campo.erro textarea { border-color: var(--erro); }
+  .msg-erro { color: var(--erro); font-size: .77rem; margin-top: 4px; display: none; }
   .campo.erro .msg-erro { display: block; }
 
-  .opcoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-  .opcao { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
-  .opcao input { cursor: pointer; width: 17px; height: 17px; }
+  /* Opções (checkbox/radio) */
+  .opcoes { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; }
+  .opcao  { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: .88rem; color: #3a3a3a; }
+  .opcao input { cursor: pointer; width: 16px; height: 16px; accent-color: var(--azul); flex-shrink: 0; }
 
+  /* Condicional */
   .condicional { display: none; }
   .condicional.visivel { display: block; }
 
-  .nav-btns { display: flex; justify-content: space-between; margin-top: 28px; }
-  .btn { padding: 11px 28px; border: none; border-radius: 6px; font-size: .95rem; font-weight: 600; cursor: pointer; transition: background .2s; }
-  .btn-anterior { background: #eee; color: #555; }
-  .btn-anterior:hover { background: #ddd; }
-  .btn-proximo { background: #1a5276; color: #fff; }
-  .btn-proximo:hover { background: #154360; }
-  .btn-enviar { background: #1e8449; color: #fff; }
-  .btn-enviar:hover { background: #196f3d; }
-  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  /* Alerta info */
+  .alerta-info {
+    background: var(--azul-clr);
+    border: 1px solid #b8cfe8;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: .84rem;
+    color: #1a4a7a;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
 
-  #msg-sucesso { display: none; text-align: center; padding: 32px 16px; }
-  #msg-sucesso h2 { color: #1e8449; font-size: 1.4rem; margin-bottom: 12px; }
-  #msg-sucesso p { color: #555; line-height: 1.6; }
-  .icone-ok { font-size: 3rem; margin-bottom: 16px; }
-  .alerta { background: #fef9e7; border: 1px solid #f9ca24; border-radius: 6px; padding: 12px 16px; font-size: .88rem; color: #7d6608; margin-bottom: 18px; }
+  /* Botões nav */
+  .nav-btns {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--borda);
+  }
+  .btn {
+    padding: 11px 26px;
+    border: none;
+    border-radius: 6px;
+    font-size: .92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, opacity .2s;
+    letter-spacing: .01em;
+  }
+  .btn-anterior  { background: #e8ecf0; color: #555; }
+  .btn-anterior:hover { background: #d8dee4; }
+  .btn-proximo   { background: var(--azul); color: #fff; }
+  .btn-proximo:hover { background: #0a2e56; }
+  .btn-enviar    { background: var(--verde); color: #fff; }
+  .btn-enviar:hover { background: #145731; }
+  .btn:disabled  { opacity: .55; cursor: not-allowed; }
 
-  @media (max-width: 500px) {
-    .form-wrap { padding: 20px 14px; }
+  /* Sucesso */
+  #msg-sucesso { display: none; text-align: center; padding: 28px 16px; }
+  #msg-sucesso .icone-ok { font-size: 3.5rem; margin-bottom: 16px; }
+  #msg-sucesso h2 { color: var(--verde); font-size: 1.4rem; margin-bottom: 12px; }
+  #msg-sucesso p  { color: #555; line-height: 1.7; margin-bottom: 8px; }
+
+  /* Localização map link */
+  .link-mapa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--azul-med);
+    font-size: .82rem;
+    text-decoration: none;
+    margin-top: 4px;
+  }
+  .link-mapa:hover { text-decoration: underline; }
+
+  @media (max-width: 560px) {
+    .form-wrap { margin: 0; border-radius: 0; padding: 20px 14px; }
     .step-label { display: none; }
+    .linha-2 { grid-template-columns: 1fr; }
+    .form-header h1 { font-size: 1.1rem; }
   }
 </style>
 </head>
 <body>
+
+<div class="form-header">
+  <div class="subtag">Fenapestalozzi</div>
+  <h1>XVII Congresso Fenapestalozzi 2026</h1>
+  <div class="info-evento">
+    <span>📅 10 a 13 de novembro de 2026</span>
+    <span>📍 Complexo Brasil 21 — Brasília, DF</span>
+  </div>
+</div>
+
 <div class="form-wrap">
-  <h1>Inscrição — Congresso Fenapestalozzi 2026</h1>
-  <p class="subtitulo">Preencha os dados abaixo para garantir sua vaga.</p>
 
   <div class="progress-bar" id="progress-bar">
-    <div class="step-indicator active" data-step="1"><div class="step-circle">1</div><span class="step-label">Dados pessoais</span></div>
-    <div class="step-indicator" data-step="2"><div class="step-circle">2</div><span class="step-label">Vínculo</span></div>
-    <div class="step-indicator" data-step="3"><div class="step-circle">3</div><span class="step-label">Perfil</span></div>
-    <div class="step-indicator" data-step="4"><div class="step-circle">4</div><span class="step-label">Acessibilidade</span></div>
-    <div class="step-indicator" data-step="5"><div class="step-circle">5</div><span class="step-label">LGPD</span></div>
+    <div class="step-indicator active" data-step="1">
+      <div class="step-circle">1</div>
+      <span class="step-label">Dados pessoais</span>
+    </div>
+    <div class="step-indicator" data-step="2">
+      <div class="step-circle">2</div>
+      <span class="step-label">Vínculo</span>
+    </div>
+    <div class="step-indicator" data-step="3">
+      <div class="step-circle">3</div>
+      <span class="step-label">Perfil</span>
+    </div>
+    <div class="step-indicator" data-step="4">
+      <div class="step-circle">4</div>
+      <span class="step-label">Acessibilidade</span>
+    </div>
+    <div class="step-indicator" data-step="5">
+      <div class="step-circle">5</div>
+      <span class="step-label">Termos</span>
+    </div>
   </div>
 
   <form id="form-inscricao" novalidate>
 
-    <!-- ETAPA 1 -->
+    <!-- ETAPA 1 — Dados pessoais -->
     <div class="etapa ativa" id="etapa-1">
-      <h2>Etapa 1 — Dados pessoais</h2>
+      <h2 data-num="1">Dados pessoais</h2>
+
       <div class="campo" id="campo-nome_completo">
         <label>Nome completo <span class="obrig">*</span></label>
-        <input type="text" name="nome_completo" id="nome_completo" placeholder="Seu nome completo" autocomplete="name">
+        <input type="text" name="nome_completo" id="nome_completo"
+               placeholder="Seu nome completo" autocomplete="name">
         <span class="msg-erro">Informe seu nome completo (mínimo 5 caracteres).</span>
       </div>
+
       <div class="campo" id="campo-nome_social">
         <label>Nome social / nome para crachá e certificado</label>
-        <input type="text" name="nome_social" id="nome_social" placeholder="Deixe em branco para usar o nome completo">
+        <input type="text" name="nome_social" id="nome_social"
+               placeholder="Deixe em branco para usar o nome completo">
       </div>
-      <div class="campo" id="campo-cpf">
-        <label>CPF <span class="obrig">*</span></label>
-        <input type="text" name="cpf" id="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
-        <span class="msg-erro">Informe um CPF válido.</span>
+
+      <div class="linha-2">
+        <div class="campo" id="campo-cpf">
+          <label>CPF <span class="obrig">*</span></label>
+          <input type="text" name="cpf" id="cpf"
+                 placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+          <span class="msg-erro">Informe um CPF válido.</span>
+        </div>
+        <div class="campo" id="campo-data_nascimento">
+          <label>Data de nascimento</label>
+          <input type="date" name="data_nascimento" id="data_nascimento">
+        </div>
       </div>
-      <div class="campo" id="campo-data_nascimento">
-        <label>Data de nascimento</label>
-        <input type="date" name="data_nascimento" id="data_nascimento">
-      </div>
+
       <div class="campo" id="campo-email">
         <label>E-mail <span class="obrig">*</span></label>
-        <input type="email" name="email" id="email" placeholder="seu@email.com" autocomplete="email">
+        <input type="email" name="email" id="email"
+               placeholder="seu@email.com" autocomplete="email">
         <span class="msg-erro">Informe um e-mail válido.</span>
       </div>
+
       <div class="campo" id="campo-email_confirm">
         <label>Confirmar e-mail <span class="obrig">*</span></label>
-        <input type="email" name="email_confirm" id="email_confirm" placeholder="Repita seu e-mail">
+        <input type="email" name="email_confirm" id="email_confirm"
+               placeholder="Repita seu e-mail">
         <span class="msg-erro">Os e-mails não coincidem.</span>
       </div>
+
       <div class="campo" id="campo-telefone">
         <label>Telefone / WhatsApp <span class="obrig">*</span></label>
-        <input type="tel" name="telefone" id="telefone" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric">
+        <input type="tel" name="telefone" id="telefone"
+               placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric">
         <span class="msg-erro">Informe um telefone válido com DDD.</span>
+      </div>
+
+      <div class="linha-2">
+        <div class="campo" id="campo-uf">
+          <label>Estado (UF) <span class="obrig">*</span></label>
+          <select name="uf" id="uf">
+            <option value="">Selecione o estado</option>
+            <option value="AC">AC — Acre</option>
+            <option value="AL">AL — Alagoas</option>
+            <option value="AP">AP — Amapá</option>
+            <option value="AM">AM — Amazonas</option>
+            <option value="BA">BA — Bahia</option>
+            <option value="CE">CE — Ceará</option>
+            <option value="DF">DF — Distrito Federal</option>
+            <option value="ES">ES — Espírito Santo</option>
+            <option value="GO">GO — Goiás</option>
+            <option value="MA">MA — Maranhão</option>
+            <option value="MT">MT — Mato Grosso</option>
+            <option value="MS">MS — Mato Grosso do Sul</option>
+            <option value="MG">MG — Minas Gerais</option>
+            <option value="PA">PA — Pará</option>
+            <option value="PB">PB — Paraíba</option>
+            <option value="PR">PR — Paraná</option>
+            <option value="PE">PE — Pernambuco</option>
+            <option value="PI">PI — Piauí</option>
+            <option value="RJ">RJ — Rio de Janeiro</option>
+            <option value="RN">RN — Rio Grande do Norte</option>
+            <option value="RS">RS — Rio Grande do Sul</option>
+            <option value="RO">RO — Rondônia</option>
+            <option value="RR">RR — Roraima</option>
+            <option value="SC">SC — Santa Catarina</option>
+            <option value="SP">SP — São Paulo</option>
+            <option value="SE">SE — Sergipe</option>
+            <option value="TO">TO — Tocantins</option>
+          </select>
+          <span class="msg-erro">Selecione seu estado.</span>
+        </div>
+
+        <div class="campo" id="campo-municipio">
+          <label>Município <span class="obrig">*</span></label>
+          <input type="text" name="municipio" id="municipio"
+                 placeholder="Sua cidade">
+          <span class="msg-erro">Informe seu município.</span>
+        </div>
       </div>
     </div>
 
-    <!-- ETAPA 2 -->
+    <!-- ETAPA 2 — Vínculo e área -->
     <div class="etapa" id="etapa-2">
-      <h2>Etapa 2 — Vínculo institucional</h2>
+      <h2 data-num="2">Vínculo e área de atuação</h2>
+
       <div class="campo" id="campo-vinculo_pestalozzi">
         <label>Você tem vínculo com a Pestalozzi? <span class="obrig">*</span></label>
         <div class="opcoes">
@@ -132,27 +405,7 @@
         </div>
         <span class="msg-erro">Selecione uma opção.</span>
       </div>
-      <div class="condicional" id="bloco-uf-municipio">
-        <div class="campo" id="campo-uf">
-          <label>Estado (UF) <span class="obrig">*</span></label>
-          <select name="uf" id="uf">
-            <option value="">Selecione o estado</option>
-            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-            <option>SP</option><option>SE</option><option>TO</option>
-          </select>
-          <span class="msg-erro">Selecione seu estado.</span>
-        </div>
-        <div class="campo" id="campo-municipio">
-          <label>Município <span class="obrig">*</span></label>
-          <input type="text" name="municipio" id="municipio" placeholder="Seu município">
-          <span class="msg-erro">Informe seu município.</span>
-        </div>
-      </div>
+
       <div class="campo" id="campo-area_atuacao">
         <label>Área de atuação <span class="obrig">*</span></label>
         <div class="opcoes">
@@ -166,9 +419,10 @@
       </div>
     </div>
 
-    <!-- ETAPA 3 -->
+    <!-- ETAPA 3 — Perfil -->
     <div class="etapa" id="etapa-3">
-      <h2>Etapa 3 — Perfil do participante</h2>
+      <h2 data-num="3">Perfil do participante</h2>
+
       <div class="campo" id="campo-identidade_genero">
         <label>Identidade de gênero</label>
         <div class="opcoes">
@@ -185,14 +439,19 @@
         <label>Especifique sua identidade de gênero</label>
         <input type="text" name="genero_outro" id="genero_outro" placeholder="Descreva">
       </div>
+
       <div class="campo" id="campo-formacao">
         <label>Formação acadêmica</label>
         <select name="formacao" id="formacao">
           <option value="">Selecione (opcional)</option>
-          <option>Ensino Médio</option><option>Graduação</option>
-          <option>Pós-graduação</option><option>Mestrado</option><option>Doutorado</option>
+          <option>Ensino Médio</option>
+          <option>Graduação</option>
+          <option>Pós-graduação</option>
+          <option>Mestrado</option>
+          <option>Doutorado</option>
         </select>
       </div>
+
       <div class="campo" id="campo-como_soube">
         <label>Como soube do evento?</label>
         <div class="opcoes">
@@ -211,9 +470,10 @@
       </div>
     </div>
 
-    <!-- ETAPA 4 -->
+    <!-- ETAPA 4 — Acessibilidade -->
     <div class="etapa" id="etapa-4">
-      <h2>Etapa 4 — Acessibilidade e alimentação</h2>
+      <h2 data-num="4">Acessibilidade e alimentação</h2>
+
       <div class="campo" id="campo-pcd">
         <label>Você é pessoa com deficiência (PCD)? <span class="obrig">*</span></label>
         <div class="opcoes">
@@ -225,15 +485,18 @@
       <div class="condicional" id="bloco-pcd">
         <div class="campo" id="campo-pcd_descricao">
           <label>Especifique a deficiência <span class="obrig">*</span></label>
-          <textarea name="pcd_descricao" id="pcd_descricao" placeholder="Descreva sua deficiência"></textarea>
+          <textarea name="pcd_descricao" id="pcd_descricao"
+                    placeholder="Descreva sua deficiência"></textarea>
           <span class="msg-erro">Por favor, descreva sua deficiência.</span>
         </div>
         <div class="campo" id="campo-pcd_recurso">
           <label>Recurso de acessibilidade necessário <span class="obrig">*</span></label>
-          <textarea name="pcd_recurso" id="pcd_recurso" placeholder="Ex: intérprete de Libras, cadeira de rodas..."></textarea>
+          <textarea name="pcd_recurso" id="pcd_recurso"
+                    placeholder="Ex: intérprete de Libras, cadeira de rodas..."></textarea>
           <span class="msg-erro">Por favor, informe o recurso necessário.</span>
         </div>
       </div>
+
       <div class="campo" id="campo-restricao_alimentar">
         <label>Restrição alimentar</label>
         <div class="opcoes">
@@ -247,49 +510,69 @@
       </div>
       <div class="condicional campo" id="bloco-alergia">
         <label>Descreva sua alergia grave <span class="obrig">*</span></label>
-        <input type="text" name="restricao_outro" id="restricao_outro" placeholder="Ex: amendoim, frutos do mar...">
+        <input type="text" name="restricao_outro" id="restricao_outro"
+               placeholder="Ex: amendoim, frutos do mar...">
         <span class="msg-erro">Por favor, descreva sua alergia.</span>
       </div>
     </div>
 
-    <!-- ETAPA 5 -->
+    <!-- ETAPA 5 — Termos -->
     <div class="etapa" id="etapa-5">
-      <h2>Etapa 5 — Termos e envio</h2>
-      <div class="alerta">Revise seus dados antes de enviar. Após a inscrição você receberá um e-mail de confirmação com seu QR Code.</div>
+      <h2 data-num="5">Termos e envio</h2>
+
+      <div class="alerta-info">
+        Revise seus dados antes de enviar. Após a inscrição você receberá um
+        <strong>e-mail de confirmação</strong> com o QR Code de credenciamento.
+      </div>
+
       <div class="campo" id="campo-aceite_lgpd">
-        <label class="opcao" style="font-weight:normal;font-size:.9rem;align-items:flex-start;gap:10px;">
-          <input type="checkbox" name="aceite_lgpd" id="aceite_lgpd" style="margin-top:3px;flex-shrink:0;">
-          <span>Declaro que li e concordo com os <strong>termos de uso e política de privacidade</strong>. <span class="obrig">*</span></span>
+        <label class="opcao" style="font-weight:normal;font-size:.88rem;align-items:flex-start;gap:10px;line-height:1.5">
+          <input type="checkbox" name="aceite_lgpd" id="aceite_lgpd" style="margin-top:3px;flex-shrink:0;width:17px;height:17px;">
+          <span>
+            Li e concordo com a <strong>Política de Privacidade e Tratamento de Dados (LGPD)</strong>.
+            Declaro que os dados informados são verdadeiros e autorizo seu uso para fins de
+            organização e comunicação do evento. <span style="color:var(--erro)">*</span><br>
+            <a href="/docs/autorizacao-imagem-voz.pdf" target="_blank"
+               style="color:var(--azul-med);font-size:.81rem;">
+              📄 Ver documento: Autorização para uso de imagem e voz
+            </a>
+          </span>
         </label>
         <span class="msg-erro">Você precisa aceitar os termos para continuar.</span>
       </div>
+
       <div class="campo" id="campo-aceite_imagem">
-        <label class="opcao" style="font-weight:normal;font-size:.9rem;align-items:flex-start;gap:10px;">
-          <input type="checkbox" name="aceite_imagem" id="aceite_imagem" style="margin-top:3px;flex-shrink:0;">
-          <span>Autorizo o uso da minha imagem e dados para fins de divulgação do evento.</span>
+        <label class="opcao" style="font-weight:normal;font-size:.88rem;align-items:flex-start;gap:10px;line-height:1.5">
+          <input type="checkbox" name="aceite_imagem" id="aceite_imagem" style="margin-top:3px;flex-shrink:0;width:17px;height:17px;">
+          <span>Autorizo o uso da minha imagem e voz para fins de divulgação do evento (fotos, vídeos e transmissões).</span>
         </label>
       </div>
     </div>
 
     <div class="nav-btns">
       <button type="button" class="btn btn-anterior" id="btn-anterior" style="display:none;">← Anterior</button>
-      <button type="button" class="btn btn-proximo" id="btn-proximo">Próximo →</button>
-      <button type="submit" class="btn btn-enviar" id="btn-enviar" style="display:none;">Enviar inscrição</button>
+      <button type="button" class="btn btn-proximo"  id="btn-proximo">Próximo →</button>
+      <button type="submit"  class="btn btn-enviar"  id="btn-enviar" style="display:none;">✔ Confirmar inscrição</button>
     </div>
   </form>
 
   <div id="msg-sucesso">
     <div class="icone-ok">✅</div>
     <h2>Inscrição realizada com sucesso!</h2>
-    <p>Em alguns minutos você receberá um e-mail de confirmação com seu QR Code de credenciamento.<br>Guarde-o para apresentar na entrada do evento.</p>
+    <p>Em instantes você receberá um <strong>e-mail de confirmação</strong> com o seu QR Code de credenciamento.</p>
+    <p>Apresente o QR Code na entrada do evento — pelo celular ou impresso.</p>
+    <p style="margin-top:16px;font-size:.85rem;color:#888;">
+      XVII Congresso Fenapestalozzi 2026 &bull; 10 a 13 de novembro &bull; Brasília, DF
+    </p>
   </div>
-</div>
+
+</div><!-- /.form-wrap -->
 
 <script>
 let etapaAtual = 1;
 const totalEtapas = 5;
 
-// Máscaras
+/* ── Máscaras ── */
 function maskCPF(v) {
   v = v.replace(/\D/g,'').slice(0,11);
   if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
@@ -307,23 +590,19 @@ function maskTel(v) {
 document.getElementById('cpf').addEventListener('input', function(){ this.value = maskCPF(this.value); });
 document.getElementById('telefone').addEventListener('input', function(){ this.value = maskTel(this.value); });
 
-// Validação de CPF
+/* ── CPF ── */
 function validarCPF(cpf) {
   cpf = cpf.replace(/\D/g,'');
   if(cpf.length!==11||/^(\d)\1{10}$/.test(cpf)) return false;
   for(let t=9;t<11;t++){
     let s=0;
     for(let i=0;i<t;i++) s+=parseInt(cpf[i])*(t+1-i);
-    const r=((s*10)%11)%10;
-    if(r!==parseInt(cpf[t])) return false;
+    if(((s*10)%11)%10!==parseInt(cpf[t])) return false;
   }
   return true;
 }
 
-// Condicionais
-document.querySelectorAll('input[name="vinculo_pestalozzi"]').forEach(r=>{
-  r.addEventListener('change',()=>{ document.getElementById('bloco-uf-municipio').classList.toggle('visivel',r.value==='1'&&r.checked); });
-});
+/* ── Condicionais ── */
 document.querySelectorAll('input[name="pcd"]').forEach(r=>{
   r.addEventListener('change',()=>{ document.getElementById('bloco-pcd').classList.toggle('visivel',r.value==='1'&&r.checked); });
 });
@@ -346,8 +625,11 @@ document.querySelectorAll('input[name="restricao_alimentar[]"]').forEach(cb=>{
   if(cb.id!=='restricao_nenhuma') cb.addEventListener('change',function(){ if(this.checked) document.getElementById('restricao_nenhuma').checked=false; });
 });
 
-// Validação por etapa
-function marcarErro(id,v){ const el=document.getElementById('campo-'+id); if(el) el.classList.toggle('erro',v); }
+/* ── Validação ── */
+function marcarErro(id,v){
+  const el=document.getElementById('campo-'+id);
+  if(el) el.classList.toggle('erro',v);
+}
 function limparErros(){ document.querySelectorAll('.campo.erro').forEach(el=>el.classList.remove('erro')); }
 
 function validarEtapa(n){
@@ -359,14 +641,12 @@ function validarEtapa(n){
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ marcarErro('email',true); ok=false; }
     if(document.getElementById('email_confirm').value.trim()!==em){ marcarErro('email_confirm',true); ok=false; }
     if(document.getElementById('telefone').value.replace(/\D/g,'').length<10){ marcarErro('telefone',true); ok=false; }
+    if(!document.getElementById('uf').value){ marcarErro('uf',true); ok=false; }
+    if(!document.getElementById('municipio').value.trim()){ marcarErro('municipio',true); ok=false; }
   }
   if(n===2){
     const v=document.querySelector('input[name="vinculo_pestalozzi"]:checked');
     if(!v){ marcarErro('vinculo_pestalozzi',true); ok=false; }
-    else if(v.value==='1'){
-      if(!document.getElementById('uf').value){ marcarErro('uf',true); ok=false; }
-      if(!document.getElementById('municipio').value.trim()){ marcarErro('municipio',true); ok=false; }
-    }
     if(!document.querySelectorAll('input[name="area_atuacao[]"]:checked').length){ marcarErro('area_atuacao',true); ok=false; }
   }
   if(n===4){
@@ -391,19 +671,21 @@ function irParaEtapa(n){
   document.getElementById('etapa-'+n).classList.add('ativa');
   document.querySelectorAll('.step-indicator').forEach(el=>{
     const s=parseInt(el.dataset.step);
-    el.classList.toggle('active',s===n); el.classList.toggle('done',s<n);
+    el.classList.toggle('active',s===n);
+    el.classList.toggle('done',s<n);
   });
   document.getElementById('btn-anterior').style.display = n>1?'inline-block':'none';
-  document.getElementById('btn-proximo').style.display = n<totalEtapas?'inline-block':'none';
-  document.getElementById('btn-enviar').style.display = n===totalEtapas?'inline-block':'none';
-  etapaAtual=n; window.scrollTo(0,0);
+  document.getElementById('btn-proximo').style.display  = n<totalEtapas?'inline-block':'none';
+  document.getElementById('btn-enviar').style.display   = n===totalEtapas?'inline-block':'none';
+  etapaAtual=n;
+  window.scrollTo({top:0,behavior:'smooth'});
   try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
 }
 
 document.getElementById('btn-proximo').addEventListener('click',()=>{ if(validarEtapa(etapaAtual)) irParaEtapa(etapaAtual+1); });
 document.getElementById('btn-anterior').addEventListener('click',()=>{ irParaEtapa(etapaAtual-1); });
 
-// Envio
+/* ── Envio ── */
 document.getElementById('form-inscricao').addEventListener('submit', async function(e){
   e.preventDefault();
   if(!validarEtapa(5)) return;
@@ -419,8 +701,8 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
   ['area_atuacao','identidade_genero','como_soube','restricao_alimentar'].forEach(k=>{
     dados[k]=JSON.stringify(Array.isArray(dados[k])?dados[k]:[]);
   });
-  dados.aceite_lgpd=document.getElementById('aceite_lgpd').checked?1:0;
-  dados.aceite_imagem=document.getElementById('aceite_imagem').checked?1:0;
+  dados.aceite_lgpd  = document.getElementById('aceite_lgpd').checked?1:0;
+  dados.aceite_imagem= document.getElementById('aceite_imagem').checked?1:0;
   delete dados.email_confirm;
 
   try{
@@ -433,11 +715,11 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
       try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
     } else {
       alert(json.mensagem||'Erro ao processar inscrição. Tente novamente.');
-      btn.disabled=false; btn.textContent='Enviar inscrição';
+      btn.disabled=false; btn.textContent='✔ Confirmar inscrição';
     }
   } catch(err){
     alert('Erro de conexão. Verifique sua internet e tente novamente.');
-    btn.disabled=false; btn.textContent='Enviar inscrição';
+    btn.disabled=false; btn.textContent='✔ Confirmar inscrição';
   }
 });
 

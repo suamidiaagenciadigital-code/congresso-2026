@@ -3,78 +3,282 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inscrição — Congresso Fenapestalozzi 2026</title>
+<title>QR Code da Inscrição — XVII Congresso Fenapestalozzi 2026</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
-  .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.12); max-width: 440px; width: 100%; padding: 36px 32px; text-align: center; }
-  .logo-evento { font-size: 1.1rem; font-weight: 700; color: #1a5276; margin-bottom: 24px; letter-spacing: .02em; }
-  .nome { font-size: 1.5rem; font-weight: 700; color: #222; margin-bottom: 8px; }
-  .cpf  { font-size: .95rem; color: #666; margin-bottom: 24px; font-family: monospace; letter-spacing: .08em; }
-  .qr-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
-  .qr-wrap img { width: 200px; height: 200px; border: 3px solid #eee; border-radius: 8px; }
-  .qr-placeholder { width: 200px; height: 200px; border: 3px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: .85rem; }
-  .data-label { font-size: .8rem; color: #999; margin-bottom: 4px; }
-  .data-valor { font-size: .95rem; color: #444; margin-bottom: 24px; }
-  .rodape { font-size: .78rem; color: #bbb; margin-top: 8px; }
-  .loading { color: #888; }
-  .erro-wrap h2 { color: #c0392b; margin-bottom: 12px; }
-  .erro-wrap p  { color: #666; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f2f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  .header-logo {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .header-logo p {
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #0d3b6e;
+    font-weight: 700;
+    opacity: .7;
+    margin-bottom: 4px;
+  }
+  .header-logo h1 {
+    font-size: 1rem;
+    color: #0d3b6e;
+    font-weight: 700;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    max-width: 460px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: #0d3b6e;
+    color: #fff;
+    padding: 18px 24px;
+    text-align: center;
+  }
+  .card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .card-body {
+    padding: 24px;
+  }
+
+  .confirmado-label {
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .confirmado-evento {
+    font-size: .92rem;
+    font-weight: 700;
+    color: #0d3b6e;
+    margin-bottom: 20px;
+    line-height: 1.4;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .info-linha {
+    display: flex;
+    margin-bottom: 10px;
+    font-size: .9rem;
+  }
+  .info-linha .info-key {
+    color: #888;
+    font-weight: 600;
+    min-width: 70px;
+    flex-shrink: 0;
+  }
+  .info-linha .info-val {
+    color: #1a1a1a;
+    font-family: inherit;
+  }
+  .info-linha .info-val.mono {
+    font-family: 'Courier New', monospace;
+    letter-spacing: .04em;
+  }
+
+  .qr-section {
+    text-align: center;
+    margin: 20px 0 16px;
+  }
+  .qr-section img {
+    width: 200px;
+    height: 200px;
+    border: 3px solid #e8ecf3;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto 8px;
+  }
+  .qr-section p {
+    font-size: .77rem;
+    color: #aaa;
+  }
+  .qr-placeholder {
+    width: 200px;
+    height: 200px;
+    border: 3px dashed #ccc;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #bbb;
+    font-size: .82rem;
+    margin: 0 auto 8px;
+  }
+
+  .badge-confirmado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #e6f4ec;
+    color: #1b6e3f;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: .78rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .data-inscricao {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+    font-size: .78rem;
+    color: #aaa;
+    text-align: center;
+  }
+
+  .card-footer {
+    background: #f9fafb;
+    padding: 14px 24px;
+    text-align: center;
+    border-top: 1px solid #eee;
+    font-size: .77rem;
+    color: #aaa;
+    line-height: 1.5;
+  }
+
+  /* Estados de carregamento/erro */
+  .loading {
+    text-align: center;
+    padding: 40px 24px;
+    color: #888;
+    font-size: .9rem;
+  }
+  .loading .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #dde3ed;
+    border-top-color: #0d3b6e;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .erro-wrap { padding: 32px 24px; text-align: center; }
+  .erro-wrap h3 { color: #c0392b; margin-bottom: 10px; }
+  .erro-wrap p  { color: #666; font-size: .88rem; }
 </style>
 </head>
 <body>
+
+<div class="header-logo">
+  <p>Fenapestalozzi</p>
+  <h1>XVII Congresso Fenapestalozzi 2026</h1>
+</div>
+
 <div class="card" id="card">
-  <div class="loading">Carregando...</div>
+  <div class="card-header">
+    <h2>QR Code da Inscrição</h2>
+  </div>
+  <div class="card-body">
+    <div class="loading">
+      <div class="spinner"></div>
+      Carregando inscrição...
+    </div>
+  </div>
 </div>
 
 <script>
 async function carregar() {
-  // Lê o hash da URL: /inscricao/?h=abc123...
   const hash = new URLSearchParams(window.location.search).get('h') || '';
 
   if (!hash || !/^[a-f0-9]{32}$/.test(hash)) {
-    renderErro('Código de inscrição inválido.');
+    renderErro('Código de inscrição inválido ou não encontrado.');
     return;
   }
 
   try {
-    const resp = await fetch(`/api/inscrito?h=${hash}`);
+    const resp = await fetch('/api/inscrito?h=' + hash);
     const json = await resp.json();
-    if (!json.success) { renderErro(json.mensagem || 'Inscrição não encontrada.'); return; }
+    if (!json.success) {
+      renderErro(json.mensagem || 'Inscrição não encontrada.');
+      return;
+    }
     renderInscrito(json.dados);
   } catch(e) {
-    renderErro('Erro de conexão. Tente novamente.');
+    renderErro('Erro de conexão. Verifique sua internet e tente novamente.');
   }
 }
 
 function renderInscrito(d) {
-  document.title = `${d.nome} — Congresso Fenapestalozzi 2026`;
+  const eventoNome = 'XVII Congresso Fenapestalozzi 2026';
+  document.title = d.nome + ' — ' + eventoNome;
+
   document.getElementById('card').innerHTML = `
-    <div class="logo-evento">Congresso Fenapestalozzi 2026</div>
-    <div class="nome">${esc(d.nome)}</div>
-    <div class="cpf">${esc(d.cpf_parcial)}</div>
-    <div class="qr-wrap">
-      ${d.qrcode_url
-        ? `<img src="${esc(d.qrcode_url)}" alt="QR Code de credenciamento">`
-        : `<div class="qr-placeholder">QR Code<br>indisponível</div>`}
+    <div class="card-header">
+      <h2>QR Code da Inscrição</h2>
     </div>
-    <div class="data-label">Inscrito em</div>
-    <div class="data-valor">${esc(d.data_inscricao)}</div>
-    <div class="rodape">Fenapestalozzi 2026 — Apresente este QR Code no credenciamento.</div>
+    <div class="card-body">
+
+      <div class="confirmado-label">Inscrição confirmada no evento</div>
+      <div class="confirmado-evento">${esc(eventoNome)}</div>
+
+      <span class="badge-confirmado">✔ Confirmado</span>
+
+      <div class="info-linha">
+        <span class="info-key">Nome:</span>
+        <span class="info-val">${esc(d.nome)}</span>
+      </div>
+      <div class="info-linha">
+        <span class="info-key">CPF:</span>
+        <span class="info-val mono">${esc(d.cpf_parcial)}</span>
+      </div>
+
+      <div class="qr-section">
+        ${d.qrcode_url
+          ? `<img src="${esc(d.qrcode_url)}" alt="QR Code de credenciamento">
+             <p>Apresente este QR Code no credenciamento</p>`
+          : `<div class="qr-placeholder">QR Code<br>indisponível</div>`}
+      </div>
+
+      <div class="data-inscricao">Inscrito em ${esc(d.data_inscricao)}</div>
+    </div>
+
+    <div class="card-footer">
+      XVII Congresso Fenapestalozzi 2026 &bull; 10 a 13 de novembro &bull; Brasília, DF<br>
+      Apresente este QR Code na entrada do evento — pelo celular ou impresso.
+    </div>
   `;
 }
 
 function renderErro(msg) {
   document.getElementById('card').innerHTML = `
-    <div class="erro-wrap">
-      <h2>Inscrição não encontrada</h2>
-      <p>${esc(msg)}</p>
+    <div class="card-header">
+      <h2>QR Code da Inscrição</h2>
+    </div>
+    <div class="card-body">
+      <div class="erro-wrap">
+        <h3>Inscrição não encontrada</h3>
+        <p>${esc(msg)}</p>
+      </div>
     </div>
   `;
 }
 
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 carregar();
