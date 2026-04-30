@@ -186,7 +186,7 @@ module.exports = async (req, res) => {
           <p style="margin:0 0 16px;font-size:14px;color:#2d2d2d;line-height:1.6">
             confirmamos sua inscrição no evento: <strong>${EVENTO_NOME}</strong>,
             evento presencial, a ser realizado entre os dias
-            <strong>${EVENTO_DATA}</strong>, ${EVENTO_HORA},
+            <strong>${EVENTO_DATA}</strong>,
             em <strong>${EVENTO_LOCAL}</strong>.
           </p>
 
