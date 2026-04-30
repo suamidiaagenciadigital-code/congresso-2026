@@ -228,7 +228,7 @@ module.exports = async (req, res) => {
               <td style="padding:14px 18px">
                 <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#402B16;text-transform:uppercase;letter-spacing:.5px">Detalhes do evento</p>
                 <p style="margin:3px 0;font-size:13px;color:#444">📅 <strong>Data:</strong> ${EVENTO_DATA}</p>
-                <p style="margin:3px 0;font-size:13px;color:#444">🕐 <strong>Horário:</strong> ${EVENTO_HORA}</p>
+                <p style="margin:3px 0;font-size:13px;color:#444">🌐 <strong>Programação:</strong> <a href="https://congressopestalozzi.org.br" style="color:#1a5796">congressopestalozzi.org.br</a></p>
                 <p style="margin:3px 0;font-size:13px;color:#444">📍 <strong>Local:</strong> ${EVENTO_LOCAL}</p>
                 <p style="margin:6px 0 0;font-size:12px">
                   <a href="${MAPS_URL}" style="color:#1a5796">Ver no Google Maps →</a>
