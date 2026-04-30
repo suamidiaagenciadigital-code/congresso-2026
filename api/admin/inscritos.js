@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
 
   if (busca) query = query.or(`nome_completo.ilike.%${busca}%,nome_social.ilike.%${busca}%,email.ilike.%${busca}%,cpf.ilike.%${busca}%`);
   if (uf)    query = query.eq('uf', uf);
-  if (area)  query = query.contains('area_atuacao', [area]);
+  if (area)  query = query.filter('area_atuacao::text', 'ilike', `%${area}%`);
   if (cert === '1') query = query.eq('certificado_enviado', true);
   if (cert === '0') query = query.eq('certificado_enviado', false);
 

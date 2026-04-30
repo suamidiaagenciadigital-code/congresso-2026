@@ -333,18 +333,25 @@ async function carregarDados(params = {}) {
   const qs = new URLSearchParams(
     Object.fromEntries(Object.entries(params).filter(([, v]) => v !== ''))
   ).toString();
+
+  // Loading
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '<tr><td colspan="10" class="vazio" style="color:#888">⏳ Carregando...</td></tr>';
+
   try {
     const resp = await fetch(`/api/admin/inscritos${qs ? '?' + qs : ''}`, { headers: authHeaders() });
     if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
     const json = await resp.json();
-    if (!json.success) return;
+    if (!json.success) {
+      tbody.innerHTML = `<tr><td colspan="10" class="vazio" style="color:#c0392b">Erro: ${json.mensagem||'falha ao carregar'}</td></tr>`;
+      return;
+    }
 
     document.getElementById('cnt-total').textContent = json.total;
     document.getElementById('cnt-cert').textContent  = json.total_cert;
     document.getElementById('cnt-pend').textContent  = json.total - json.total_cert;
     dadosAtual = json.dados;
 
-    const tbody = document.getElementById('tbody');
     if (!json.dados.length) {
       tbody.innerHTML = '<tr><td colspan="10" class="vazio">Nenhum inscrito encontrado.</td></tr>';
       return;
@@ -387,10 +394,19 @@ function getParams() {
   };
 }
 
-document.getElementById('btn-filtrar').addEventListener('click', () => carregarDados(getParams()));
+async function filtrar() {
+  const btn = document.getElementById('btn-filtrar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Buscando...';
+  await carregarDados(getParams());
+  btn.disabled = false;
+  btn.textContent = 'Filtrar';
+}
+
+document.getElementById('btn-filtrar').addEventListener('click', filtrar);
 document.getElementById('btn-limpar').addEventListener('click', () => {
   ['f-busca','f-uf','f-area','f-cert'].forEach(id => { document.getElementById(id).value = ''; });
-  carregarDados();
+  filtrar();
 });
 let debounce;
 document.getElementById('f-busca').addEventListener('input', () => {
