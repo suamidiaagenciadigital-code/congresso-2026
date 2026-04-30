@@ -42,6 +42,22 @@ module.exports = async (req, res) => {
 
   const d = req.body || {};
 
+  /* ── reCAPTCHA ── */
+  if (process.env.RECAPTCHA_SECRET) {
+    const token = d.recaptcha || '';
+    if (!token) return res.status(400).json({ success: false, mensagem: 'Confirme que você não é um robô.' });
+    try {
+      const verif = await fetch(
+        `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET}&response=${token}`,
+        { method: 'POST' }
+      );
+      const result = await verif.json();
+      if (!result.success) return res.status(400).json({ success: false, mensagem: 'Verificação reCAPTCHA falhou. Tente novamente.' });
+    } catch (e) {
+      console.error('reCAPTCHA error:', e.message);
+    }
+  }
+
   /* ── Validações ── */
   const nome_completo = san(d.nome_completo, 200);
   if (nome_completo.length < 5)

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscrições — XVII Congresso Fenapestalozzi 2026</title>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -77,7 +78,7 @@
     align-items: center;
     flex: 1;
     position: relative;
-    z-index: 1;
+    /* sem z-index aqui para não criar stacking context isolado */
   }
   .step-indicator::before {
     content: '';
@@ -87,7 +88,7 @@
     width: 100%;
     height: 3px;
     background: var(--borda);
-    z-index: 0;
+    z-index: 1;
   }
   .step-indicator:first-child::before { display: none; }
   .step-circle {
@@ -102,7 +103,7 @@
     font-size: .82rem;
     font-weight: 700;
     position: relative;
-    z-index: 2;
+    z-index: 3;
     transition: background .25s, color .25s;
   }
   .step-indicator.active .step-circle,
@@ -548,6 +549,17 @@
           <span>Autorizo o uso da minha imagem e voz para fins de divulgação do evento (fotos, vídeos e transmissões).</span>
         </label>
       </div>
+
+      <!-- reCAPTCHA -->
+      <div id="campo-recaptcha" style="margin-top:20px;">
+        <div class="g-recaptcha"
+             data-sitekey="COLE_SEU_SITE_KEY_AQUI"
+             data-theme="light"
+             data-size="normal"></div>
+        <span class="msg-erro" id="erro-recaptcha" style="display:none;color:var(--erro);font-size:.8rem;margin-top:4px;display:none;">
+          Confirme que você não é um robô.
+        </span>
+      </div>
     </div>
 
     <div class="nav-btns">
@@ -690,6 +702,16 @@ document.getElementById('btn-anterior').addEventListener('click',()=>{ irParaEta
 document.getElementById('form-inscricao').addEventListener('submit', async function(e){
   e.preventDefault();
   if(!validarEtapa(5)) return;
+
+  // Verifica reCAPTCHA
+  const recaptchaResp = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
+  const erroRecaptcha = document.getElementById('erro-recaptcha');
+  if(!recaptchaResp){
+    erroRecaptcha.style.display='block';
+    return;
+  }
+  erroRecaptcha.style.display='none';
+
   const btn=document.getElementById('btn-enviar');
   btn.disabled=true; btn.textContent='Enviando...';
 
@@ -704,6 +726,7 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
   });
   dados.aceite_lgpd  = document.getElementById('aceite_lgpd').checked?1:0;
   dados.aceite_imagem= document.getElementById('aceite_imagem').checked?1:0;
+  dados.recaptcha    = recaptchaResp;
   delete dados.email_confirm;
 
   try{
@@ -716,6 +739,7 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
       try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
     } else {
       alert(json.mensagem||'Erro ao processar inscrição. Tente novamente.');
+      if(typeof grecaptcha !== 'undefined') grecaptcha.reset();
       btn.disabled=false; btn.textContent='✔ Confirmar inscrição';
     }
   } catch(err){
