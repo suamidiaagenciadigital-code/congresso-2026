@@ -399,20 +399,12 @@ document.getElementById('f-busca').addEventListener('input', () => {
 });
 
 // CSV (respeita filtros ativos)
-document.getElementById('btn-csv').addEventListener('click', async () => {
+document.getElementById('btn-csv').addEventListener('click', () => {
   const p = getParams();
-  const qs = new URLSearchParams(Object.fromEntries(Object.entries(p).filter(([,v]) => v !== ''))).toString();
-  const resp = await fetch(`/api/admin/exportar${qs ? '?' + qs : ''}`, { headers: authHeaders() });
-  if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
-  const blob = await resp.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `inscritos_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  const params = Object.fromEntries(Object.entries(p).filter(([,v]) => v !== ''));
+  params.token = token(); // token no query param — sem fetch, sem blob
+  const qs = new URLSearchParams(params).toString();
+  window.open(`/api/admin/exportar?${qs}`, '_blank');
 });
 
 // ─── Modal detalhes ───────────────────────────────────────

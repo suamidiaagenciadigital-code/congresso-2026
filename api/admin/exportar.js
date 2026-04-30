@@ -4,7 +4,13 @@ const jwt = require('jsonwebtoken');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 function autenticar(req) {
-  try { jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), process.env.JWT_SECRET); return true; }
+  try {
+    // Aceita token via header Authorization OU via query param ?token=
+    const token = (req.headers.authorization || '').replace('Bearer ', '')
+      || (req.query && req.query.token) || '';
+    jwt.verify(token, process.env.JWT_SECRET);
+    return true;
+  }
   catch { return false; }
 }
 
