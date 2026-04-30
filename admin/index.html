@@ -406,9 +406,13 @@ document.getElementById('btn-csv').addEventListener('click', async () => {
   if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url;
+  const a = document.createElement('a');
+  a.href = url;
   a.download = `inscritos_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 });
 
 // ─── Modal detalhes ───────────────────────────────────────
