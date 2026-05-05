@@ -51,6 +51,8 @@
 
   /* Tabela */
   .tbl-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  .scroll-topo { overflow-x: auto; overflow-y: hidden; height: 12px; margin-bottom: 2px; }
+  .scroll-topo-inner { height: 1px; }
   table { width: 100%; border-collapse: collapse; font-size: .84rem; }
   thead th { background: #402B16; color: #fff; padding: 10px 12px; text-align: left; white-space: nowrap; }
   tbody tr:nth-child(even) { background: #f9fafb; }
@@ -180,7 +182,8 @@
       <span class="msg-acao" id="msg-acao"></span>
     </div>
 
-    <div class="tbl-wrap">
+    <div class="scroll-topo" id="scroll-topo"><div class="scroll-topo-inner" id="scroll-topo-inner"></div></div>
+    <div class="tbl-wrap" id="tbl-wrap">
       <table>
         <thead>
           <tr>
@@ -657,6 +660,28 @@ document.getElementById('btn-cert-teste').addEventListener('click', async () => 
     msgEl.textContent = json.mensagem || (json.success ? 'Enviado!' : 'Erro.');
   } catch { msgEl.textContent = 'Erro de conexão.'; }
 });
+
+// ─── Barra de rolagem espelhada no topo ───────────────────
+(function() {
+  const topo  = document.getElementById('scroll-topo');
+  const inner = document.getElementById('scroll-topo-inner');
+  const wrap  = document.getElementById('tbl-wrap');
+
+  function sincronizarLargura() {
+    const tabela = wrap.querySelector('table');
+    if (tabela) inner.style.width = tabela.offsetWidth + 'px';
+  }
+
+  // Sincroniza scroll bidirecional
+  topo.addEventListener('scroll', () => { wrap.scrollLeft = topo.scrollLeft; });
+  wrap.addEventListener('scroll', () => { topo.scrollLeft = wrap.scrollLeft; });
+
+  // Atualiza largura sempre que a tabela for recarregada
+  const observer = new MutationObserver(sincronizarLargura);
+  observer.observe(wrap, { childList: true, subtree: true });
+  sincronizarLargura();
+  window.addEventListener('resize', sincronizarLargura);
+})();
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();
