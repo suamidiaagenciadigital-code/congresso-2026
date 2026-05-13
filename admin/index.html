@@ -43,6 +43,7 @@
   .btn-ver      { background: #1a5276; color: #fff; padding: 4px 10px; font-size: .78rem; }
   .btn-cert-ind { background: #7d3c98; color: #fff; padding: 4px 10px; font-size: .78rem; }
   .btn-excluir  { background: #c0392b; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-reenviar { background: #1a6e3c; color: #fff; }
   .btn-salvar   { background: #402B16; color: #fff; }
   .btn-upload   { background: #1a5276; color: #fff; }
 
@@ -276,9 +277,10 @@
     </div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
-      <button class="btn btn-excluir"  id="modal-btn-excluir">Excluir inscrição</button>
-      <button class="btn btn-cert-ind" id="modal-btn-cert">Enviar certificado</button>
-      <button class="btn btn-limpar"   id="modal-btn-fechar2">Fechar</button>
+      <button class="btn btn-excluir"   id="modal-btn-excluir">Excluir inscrição</button>
+      <button class="btn btn-reenviar"  id="modal-btn-reenviar">Reenviar confirmação</button>
+      <button class="btn btn-cert-ind"  id="modal-btn-cert">Enviar certificado</button>
+      <button class="btn btn-limpar"    id="modal-btn-fechar2">Fechar</button>
     </div>
   </div>
 </div>
@@ -508,6 +510,29 @@ document.getElementById('modal-btn-cert').addEventListener('click', () => {
 document.getElementById('modal-btn-excluir').addEventListener('click', () => {
   if (modalIdAtual) excluirInscrito(modalIdAtual, true);
 });
+document.getElementById('modal-btn-reenviar').addEventListener('click', () => {
+  if (modalIdAtual) reenviarConfirmacao(modalIdAtual);
+});
+
+// ─── Reenviar confirmação ────────────────────────────────
+async function reenviarConfirmacao(id) {
+  const ins = dadosAtual.find(d => d.id === id);
+  const nome = ins ? (ins.nome_social || ins.nome_completo) : `#${id}`;
+  if (!confirm(`Reenviar e-mail de confirmação de inscrição para "${nome}"?`)) return;
+  const btn = document.getElementById('modal-btn-reenviar');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
+  try {
+    const resp = await fetch('/api/admin/reenviar-confirmacao', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ id }) });
+    const json = await resp.json();
+    alert(json.mensagem || (json.success ? 'E-mail reenviado com sucesso!' : 'Erro ao reenviar.'));
+  } catch { alert('Erro de conexão.'); }
+  finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
 
 // ─── Excluir ─────────────────────────────────────────────
 async function excluirInscrito(id, viaModal = false) {
