@@ -311,7 +311,7 @@
       </div>
 
       <div class="campo" id="campo-nome_social">
-        <label>Nome social / nome para crachá e certificado</label>
+        <label>Nome para o crachá e certificado</label>
         <input type="text" name="nome_social" id="nome_social"
                placeholder="Deixe em branco para usar o nome completo">
       </div>
@@ -417,6 +417,12 @@
           <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Esporte"> Esporte</label>
           <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Trabalho"> Trabalho</label>
           <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Cultura"> Cultura</label>
+          <label class="opcao"><input type="checkbox" name="area_atuacao[]" value="Outro" id="area_atuacao_outro_check"> Outro</label>
+        </div>
+        <div class="condicional campo" id="bloco-area-outro">
+          <label>Qual área?</label>
+          <input type="text" name="area_atuacao_outro_texto" id="area_atuacao_outro_texto" placeholder="Descreva sua área de atuação">
+          <span class="msg-erro">Informe sua área de atuação.</span>
         </div>
         <span class="msg-erro">Selecione ao menos uma área.</span>
       </div>
@@ -427,19 +433,16 @@
       <h2 data-num="3">Perfil do participante</h2>
 
       <div class="campo" id="campo-identidade_genero">
-        <label>Identidade de gênero</label>
+        <label>Gênero</label>
         <div class="opcoes">
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Mulher Cis"> Mulher Cis</label>
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Homem Cis"> Homem Cis</label>
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Mulher Trans"> Mulher Trans</label>
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Homem Trans"> Homem Trans</label>
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Não-binário"> Não-binário</label>
-          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Prefiro não responder"> Prefiro não responder</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Mulher"> Mulher</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Homem"> Homem</label>
           <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Outro" id="genero_outro_check"> Outro</label>
+          <label class="opcao"><input type="checkbox" name="identidade_genero[]" value="Prefiro não informar"> Prefiro não informar</label>
         </div>
       </div>
       <div class="condicional campo" id="bloco-genero-outro">
-        <label>Especifique sua identidade de gênero</label>
+        <label>Especifique</label>
         <input type="text" name="genero_outro" id="genero_outro" placeholder="Descreva">
       </div>
 
@@ -620,6 +623,9 @@ function validarCPF(cpf) {
 document.querySelectorAll('input[name="pcd"]').forEach(r=>{
   r.addEventListener('change',()=>{ document.getElementById('bloco-pcd').classList.toggle('visivel',r.value==='1'&&r.checked); });
 });
+document.getElementById('area_atuacao_outro_check').addEventListener('change',function(){
+  document.getElementById('bloco-area-outro').classList.toggle('visivel',this.checked);
+});
 document.getElementById('genero_outro_check').addEventListener('change',function(){
   document.getElementById('bloco-genero-outro').classList.toggle('visivel',this.checked);
 });
@@ -662,6 +668,8 @@ function validarEtapa(n){
     const v=document.querySelector('input[name="vinculo_pestalozzi"]:checked');
     if(!v){ marcarErro('vinculo_pestalozzi',true); ok=false; }
     if(!document.querySelectorAll('input[name="area_atuacao[]"]:checked').length){ marcarErro('area_atuacao',true); ok=false; }
+    const outroAreaCheck=document.getElementById('area_atuacao_outro_check');
+    if(outroAreaCheck.checked&&!document.getElementById('area_atuacao_outro_texto').value.trim()){ document.getElementById('bloco-area-outro').classList.add('erro'); ok=false; }
   }
   if(n===4){
     const p=document.querySelector('input[name="pcd"]:checked');
@@ -722,6 +730,11 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
     if(k.endsWith('[]')){ const key=k.slice(0,-2); if(!dados[key]) dados[key]=[]; dados[key].push(v); }
     else dados[k]=v;
   }
+  if(Array.isArray(dados['area_atuacao'])&&dados['area_atuacao'].includes('Outro')){
+    const outroTexto=document.getElementById('area_atuacao_outro_texto').value.trim();
+    if(outroTexto) dados['area_atuacao']=dados['area_atuacao'].map(v=>v==='Outro'?'Outro: '+outroTexto:v);
+  }
+  delete dados.area_atuacao_outro_texto;
   ['area_atuacao','identidade_genero','como_soube','restricao_alimentar'].forEach(k=>{
     dados[k]=JSON.stringify(Array.isArray(dados[k])?dados[k]:[]);
   });
