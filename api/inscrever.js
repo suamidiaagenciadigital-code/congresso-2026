@@ -141,6 +141,31 @@ module.exports = async (req, res) => {
     return res.status(500).json({ success: false, mensagem: 'Erro ao salvar inscrição. Tente novamente.' });
   }
 
+  /* ── Webhook para sistema externo de credenciamento ── */
+  if (process.env.WEBHOOK_URL) {
+    const payload = {
+      hash,
+      nome: nome_completo,
+      cpf,
+      email,
+      telefone,
+      pcd: pcd === 1,
+      pcd_descricao: pcd_descricao || null,
+      vinculo_pestalozzi: vinculo === 1,
+      uf,
+      municipio,
+      criado_em: new Date().toISOString(),
+    };
+    fetch(process.env.WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.WEBHOOK_TOKEN && { 'Authorization': `Bearer ${process.env.WEBHOOK_TOKEN}` }),
+      },
+      body: JSON.stringify(payload),
+    }).catch(e => console.error('Webhook error:', e.message));
+  }
+
   /* ── Gerar e salvar QR Code ── */
   const qr_url    = `${process.env.BASE_URL}/inscricao/?h=${hash}`;
   let qrcode_url  = null;
