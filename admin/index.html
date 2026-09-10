@@ -120,6 +120,31 @@
   .alerta-sucesso { background: #d5f5e3; color: #1e8449; }
   .alerta-erro    { background: #fdecea; color: #c0392b; }
   .alerta-aviso   { background: #fef9e7; color: #9a7d0a; border: 1px solid #f9e79f; }
+
+  /* ── Campanhas ── */
+  .badge-rascunho    { background: #e8e8e8; color: #555; }
+  .badge-aguardando  { background: #fef9e7; color: #9a7d0a; border: 1px solid #f9e79f; }
+  .badge-aprovado    { background: #d6eaf8; color: #1a5276; }
+  .badge-enviando    { background: #fdebd0; color: #ca6f1e; }
+  .badge-concluido   { background: #d5f5e3; color: #1e8449; }
+  .badge-cancelado   { background: #fdecea; color: #c0392b; }
+
+  .btn-aprovar  { background: #1a5276; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-disparar { background: #ca6f1e; color: #fff; padding: 4px 10px; font-size: .78rem; }
+  .btn-relat    { background: #6c3483; color: #fff; padding: 4px 10px; font-size: .78rem; }
+
+  .camp-form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .camp-form-group label { font-size: .82rem; font-weight: 600; color: #555; }
+  .camp-form-group input, .camp-form-group select, .camp-form-group textarea {
+    padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: .88rem; font-family: inherit;
+  }
+  .camp-form-group input:focus, .camp-form-group select:focus, .camp-form-group textarea:focus {
+    outline: none; border-color: #402B16;
+  }
+  .camp-form-group textarea { resize: vertical; min-height: 140px; }
+  .camp-form-group small { font-size: .75rem; color: #999; }
+  .camp-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .camp-form-row { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -134,6 +159,7 @@
   <div class="tabs">
     <button class="tab ativo" data-tab="inscritos">👥 Inscritos</button>
     <button class="tab" data-tab="certificado">🎓 Certificado</button>
+    <button class="tab" data-tab="campanhas">📣 Campanhas</button>
   </div>
 
   <!-- ── ABA INSCRITOS ── -->
@@ -266,7 +292,91 @@
 
   </div><!-- /tab-certificado -->
 
+  <!-- ── ABA CAMPANHAS ── -->
+  <div class="tab-content" id="tab-campanhas">
+
+    <div class="counters">
+      <div class="counter"><div class="num" id="cnt-camp-total">—</div><div class="lbl">Total de campanhas</div></div>
+      <div class="counter"><div class="num" id="cnt-camp-rascunho">—</div><div class="lbl">Rascunhos</div></div>
+      <div class="counter"><div class="num" id="cnt-camp-pendentes">—</div><div class="lbl">Aguardando / Aprovadas</div></div>
+      <div class="counter"><div class="num" id="cnt-camp-concluido">—</div><div class="lbl">Concluídas</div></div>
+    </div>
+
+    <div class="acoes">
+      <button class="btn btn-principal" id="btn-nova-campanha">+ Nova Campanha</button>
+      <button class="btn btn-limpar"    id="btn-reload-camp">↻ Atualizar</button>
+      <span class="msg-acao" id="msg-camp"></span>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Nome</th><th>Tipo</th><th>Público</th>
+            <th>Status</th><th>Agendado para</th><th>Criado em</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-campanhas"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab-campanhas -->
+
 </div><!-- /container -->
+
+<!-- Modal Campanha (criar / ver) -->
+<div class="modal-overlay" id="modal-camp-overlay">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <h2 id="modal-camp-titulo">Nova Campanha</h2>
+      <button class="modal-close" id="modal-camp-fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="msg-camp-modal"></div>
+      <div class="camp-form-row">
+        <div class="camp-form-group" style="grid-column:1/-1">
+          <label>Nome da campanha *</label>
+          <input type="text" id="camp-nome" placeholder="Ex: Lembrete — 7 dias para o Congresso" maxlength="200">
+        </div>
+      </div>
+      <div class="camp-form-row">
+        <div class="camp-form-group">
+          <label>Tipo *</label>
+          <select id="camp-tipo">
+            <option value="email">📧 E-mail</option>
+            <option value="whatsapp">📱 WhatsApp</option>
+          </select>
+        </div>
+        <div class="camp-form-group">
+          <label>Público *</label>
+          <select id="camp-publico">
+            <option value="inscritos">👥 Inscritos no Congresso</option>
+            <option value="externos">📋 Lista externa (CSV)</option>
+          </select>
+        </div>
+      </div>
+      <div class="camp-form-group" id="row-assunto">
+        <label>Assunto do e-mail *</label>
+        <input type="text" id="camp-assunto" placeholder="Ex: Sua inscrição está confirmada — veja os detalhes" maxlength="300">
+      </div>
+      <div class="camp-form-group">
+        <label id="lbl-conteudo">Conteúdo (HTML do e-mail) *</label>
+        <textarea id="camp-conteudo" placeholder="Cole aqui o HTML do e-mail..."></textarea>
+        <small id="dica-conteudo">Use {{nome}} para personalizar com o nome do destinatário.</small>
+      </div>
+      <div class="camp-form-group">
+        <label>Agendar para (opcional)</label>
+        <input type="datetime-local" id="camp-agendado">
+        <small>Deixe em branco para disparar manualmente pelo botão "Disparar".</small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-limpar"    id="modal-camp-cancelar">Cancelar</button>
+      <button class="btn" id="btn-camp-rascunho" style="background:#888;color:#fff">Salvar rascunho</button>
+      <button class="btn btn-principal" id="btn-camp-aprovar-direto">Aprovar para disparo</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal detalhes -->
 <div class="modal-overlay" id="modal-overlay">
@@ -328,6 +438,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('ativo');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('ativo');
     if (tab.dataset.tab === 'certificado') carregarConfig();
+    if (tab.dataset.tab === 'campanhas')   carregarCampanhas();
   });
 });
 
@@ -707,6 +818,262 @@ document.getElementById('btn-cert-teste').addEventListener('click', async () => 
   sincronizarLargura();
   window.addEventListener('resize', sincronizarLargura);
 })();
+
+// ─── Campanhas ───────────────────────────────────────────
+let campIdAtual = null;
+
+const CAMP_STATUS_LABEL = {
+  rascunho:             'Rascunho',
+  aguardando_aprovacao: 'Aguardando aprovação',
+  aprovado:             'Aprovado',
+  enviando:             'Enviando…',
+  concluido:            'Concluído',
+  cancelado:            'Cancelado',
+};
+const CAMP_STATUS_BADGE = {
+  rascunho:             'badge-rascunho',
+  aguardando_aprovacao: 'badge-aguardando',
+  aprovado:             'badge-aprovado',
+  enviando:             'badge-enviando',
+  concluido:            'badge-concluido',
+  cancelado:            'badge-cancelado',
+};
+
+async function carregarCampanhas() {
+  const tbody = document.getElementById('tbody-campanhas');
+  tbody.innerHTML = '<tr><td colspan="8" class="vazio">⏳ Carregando...</td></tr>';
+  try {
+    const resp = await fetch('/api/admin/campanhas', { headers: authHeaders() });
+    if (resp.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href='/admin/login.html'; return; }
+    const json = await resp.json();
+    if (!json.success) {
+      tbody.innerHTML = `<tr><td colspan="8" class="vazio" style="color:#c0392b">Erro: ${esc(json.mensagem)}</td></tr>`;
+      return;
+    }
+    const s = json.stats || {};
+    document.getElementById('cnt-camp-total').textContent    = json.total;
+    document.getElementById('cnt-camp-rascunho').textContent = s.rascunho || 0;
+    document.getElementById('cnt-camp-pendentes').textContent = (s.aguardando_aprovacao || 0) + (s.aprovado || 0);
+    document.getElementById('cnt-camp-concluido').textContent = s.concluido || 0;
+
+    if (!json.campanhas.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="vazio">Nenhuma campanha criada ainda. Clique em "+ Nova Campanha".</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = json.campanhas.map((c, i) => {
+      const badge = `<span class="badge ${CAMP_STATUS_BADGE[c.status] || ''}">${CAMP_STATUS_LABEL[c.status] || c.status}</span>`;
+      const tipo  = c.tipo === 'email' ? '📧 E-mail' : '📱 WhatsApp';
+      const pub   = c.publico === 'inscritos' ? '👥 Inscritos' : '📋 Externos';
+
+      const btnVer     = `<button class="btn btn-ver"      data-cid="${c.id}" data-cac="ver">Ver</button>`;
+      const btnEdit    = `<button class="btn btn-ver"      data-cid="${c.id}" data-cac="editar">Editar</button>`;
+      const btnAprovar = `<button class="btn btn-aprovar"  data-cid="${c.id}" data-cac="aprovar">Aprovar</button>`;
+      const btnDisp    = `<button class="btn btn-disparar" data-cid="${c.id}" data-cac="disparar">Disparar</button>`;
+      const btnRelat   = `<button class="btn btn-relat"    data-cid="${c.id}" data-cac="relatorio">Relatório</button>`;
+      const btnCanc    = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="cancelar">Cancelar</button>`;
+
+      let acoes = '';
+      if (c.status === 'rascunho')             acoes = btnEdit  + btnAprovar + btnCanc;
+      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnAprovar + btnCanc;
+      if (c.status === 'aprovado')             acoes = btnVer   + btnDisp    + btnCanc;
+      if (c.status === 'enviando')             acoes = btnVer;
+      if (c.status === 'concluido')            acoes = btnVer   + btnRelat;
+      if (c.status === 'cancelado')            acoes = btnVer;
+
+      return `<tr>
+        <td>${i + 1}</td>
+        <td><strong>${esc(c.nome)}</strong></td>
+        <td>${tipo}</td><td>${pub}</td><td>${badge}</td>
+        <td>${c.agendado_para ? fmtData(c.agendado_para) : '—'}</td>
+        <td>${fmtData(c.criado_em)}</td>
+        <td><div class="acoes-cell">${acoes}</div></td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('[data-cac]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const c = json.campanhas.find(x => x.id === btn.dataset.cid);
+        if (!c) return;
+        const acao = btn.dataset.cac;
+        if (acao === 'editar' || acao === 'ver') abrirModalCampanha(c);
+        else if (acao === 'aprovar')    aprovarCampanha(c.id, c.nome, c.status);
+        else if (acao === 'disparar')   dispararCampanha(c.id, c.nome);
+        else if (acao === 'cancelar')   cancelarCampanha(c.id, c.nome);
+        else if (acao === 'relatorio')  verRelatorio(c.id, c.nome);
+      });
+    });
+  } catch(e) {
+    console.error(e);
+    tbody.innerHTML = '<tr><td colspan="8" class="vazio" style="color:#c0392b">Erro de conexão.</td></tr>';
+  }
+}
+
+function abrirModalCampanha(camp = null) {
+  campIdAtual = camp ? camp.id : null;
+  const readonly = camp && camp.status !== 'rascunho';
+  document.getElementById('modal-camp-titulo').textContent = camp ? `Campanha: ${camp.nome}` : 'Nova Campanha';
+  document.getElementById('msg-camp-modal').innerHTML = '';
+
+  document.getElementById('camp-nome').value     = camp?.nome || '';
+  document.getElementById('camp-tipo').value     = camp?.tipo || 'email';
+  document.getElementById('camp-publico').value  = camp?.publico || 'inscritos';
+  document.getElementById('camp-assunto').value  = camp?.assunto || '';
+  document.getElementById('camp-conteudo').value = camp?.conteudo_html || camp?.conteudo_text || '';
+  document.getElementById('camp-agendado').value = camp?.agendado_para ? camp.agendado_para.slice(0, 16) : '';
+
+  ['camp-nome','camp-tipo','camp-publico','camp-assunto','camp-conteudo','camp-agendado'].forEach(id => {
+    document.getElementById(id).disabled = readonly;
+  });
+
+  document.getElementById('btn-camp-rascunho').style.display     = readonly ? 'none' : '';
+  document.getElementById('btn-camp-aprovar-direto').style.display = readonly ? 'none' : '';
+
+  atualizarCampTipo();
+  document.getElementById('modal-camp-overlay').classList.add('aberto');
+}
+
+function atualizarCampTipo() {
+  const tipo = document.getElementById('camp-tipo').value;
+  document.getElementById('row-assunto').style.display = tipo === 'email' ? '' : 'none';
+  const lbl = document.getElementById('lbl-conteudo');
+  const dica = document.getElementById('dica-conteudo');
+  const ta = document.getElementById('camp-conteudo');
+  if (tipo === 'email') {
+    lbl.textContent = 'Conteúdo (HTML do e-mail) *';
+    ta.placeholder = 'Cole aqui o HTML do e-mail...';
+    ta.style.fontFamily = 'inherit';
+    ta.removeAttribute('maxLength');
+    dica.textContent = 'Use {{nome}} para personalizar com o nome do destinatário.';
+  } else {
+    lbl.textContent = 'Mensagem de WhatsApp *';
+    ta.placeholder = 'Digite a mensagem (texto simples, máx. 1024 caracteres)...';
+    ta.style.fontFamily = 'monospace';
+    ta.maxLength = 1024;
+    dica.textContent = 'Texto simples apenas. Use {{nome}} para personalizar. Máximo 1024 caracteres.';
+  }
+}
+
+async function salvarCampanha(statusDestino) {
+  const nome     = document.getElementById('camp-nome').value.trim();
+  const tipo     = document.getElementById('camp-tipo').value;
+  const publico  = document.getElementById('camp-publico').value;
+  const assunto  = document.getElementById('camp-assunto').value.trim();
+  const conteudo = document.getElementById('camp-conteudo').value.trim();
+  const agendado = document.getElementById('camp-agendado').value;
+
+  if (!nome)    return alert('Informe o nome da campanha.');
+  if (!conteudo) return alert('Informe o conteúdo da campanha.');
+  if (tipo === 'email' && !assunto) return alert('Informe o assunto do e-mail.');
+
+  const payload = {
+    id: campIdAtual,
+    nome, tipo, publico,
+    assunto: assunto || null,
+    conteudo_html: tipo === 'email'    ? conteudo : null,
+    conteudo_text: tipo === 'whatsapp' ? conteudo : null,
+    agendado_para: agendado || null,
+    status: statusDestino,
+  };
+
+  const btnId = statusDestino === 'rascunho' ? 'btn-camp-rascunho' : 'btn-camp-aprovar-direto';
+  const btn = document.getElementById(btnId);
+  const textoOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Salvando...';
+
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: campIdAtual ? 'PATCH' : 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await resp.json();
+    if (json.success) {
+      fecharModalCampanha();
+      carregarCampanhas();
+      const msgEl = document.getElementById('msg-camp');
+      msgEl.textContent = statusDestino === 'rascunho' ? 'Rascunho salvo.' : '✅ Campanha aprovada e pronta para disparo.';
+      setTimeout(() => { msgEl.textContent = ''; }, 4000);
+    } else {
+      const el = document.getElementById('msg-camp-modal');
+      el.className = 'alerta alerta-erro'; el.textContent = json.mensagem || 'Erro ao salvar.'; el.style.display = 'block';
+    }
+  } catch {
+    const el = document.getElementById('msg-camp-modal');
+    el.className = 'alerta alerta-erro'; el.textContent = 'Erro de conexão.'; el.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = textoOriginal;
+  }
+}
+
+async function aprovarCampanha(id, nome, statusAtual) {
+  const origem = statusAtual === 'rascunho' ? 'rascunho' : 'aguardando aprovação';
+  if (!confirm(`Aprovar a campanha "${nome}"?\n\nAo confirmar, você declara que o conteúdo foi revisado e está correto para envio.`)) return;
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ id, status: 'aprovado' }),
+    });
+    const json = await resp.json();
+    const msgEl = document.getElementById('msg-camp');
+    if (json.success) {
+      msgEl.textContent = '✅ Campanha aprovada. Clique em "Disparar" quando estiver pronto.';
+      carregarCampanhas();
+    } else {
+      msgEl.textContent = 'Erro: ' + (json.mensagem || 'Tente novamente.');
+    }
+    setTimeout(() => { msgEl.textContent = ''; }, 5000);
+  } catch { alert('Erro de conexão.'); }
+}
+
+async function dispararCampanha(id, nome) {
+  if (!confirm(`DISPARAR a campanha "${nome}" agora?\n\nMensagens serão enviadas para todos os destinatários.\nEsta ação não pode ser desfeita.`)) return;
+  const msgEl = document.getElementById('msg-camp');
+  msgEl.textContent = '⏳ Iniciando disparo... aguarde.';
+  try {
+    const resp = await fetch('/api/admin/campanhas-disparar', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ id }),
+    });
+    const json = await resp.json();
+    msgEl.textContent = json.mensagem || (json.success ? 'Disparo concluído!' : 'Erro no disparo.');
+    if (json.success) setTimeout(() => { carregarCampanhas(); msgEl.textContent = ''; }, 3000);
+    else setTimeout(() => { msgEl.textContent = ''; }, 8000);
+  } catch { msgEl.textContent = 'Erro de conexão.'; }
+}
+
+async function cancelarCampanha(id, nome) {
+  if (!confirm(`Cancelar a campanha "${nome}"?`)) return;
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ id, status: 'cancelado' }),
+    });
+    const json = await resp.json();
+    if (json.success) carregarCampanhas();
+    else alert('Erro: ' + (json.mensagem || 'Tente novamente.'));
+  } catch { alert('Erro de conexão.'); }
+}
+
+function verRelatorio(id, nome) {
+  alert(`Relatório da campanha "${nome}" estará disponível após o primeiro disparo real.\n\nVocê verá: total enviados, entregues, aberturas, cliques e falhas.`);
+}
+
+function fecharModalCampanha() {
+  document.getElementById('modal-camp-overlay').classList.remove('aberto');
+  campIdAtual = null;
+}
+
+document.getElementById('btn-nova-campanha').addEventListener('click', () => abrirModalCampanha());
+document.getElementById('btn-reload-camp').addEventListener('click', carregarCampanhas);
+document.getElementById('modal-camp-fechar').addEventListener('click', fecharModalCampanha);
+document.getElementById('modal-camp-cancelar').addEventListener('click', fecharModalCampanha);
+document.getElementById('modal-camp-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-camp-overlay')) fecharModalCampanha();
+});
+document.getElementById('camp-tipo').addEventListener('change', atualizarCampTipo);
+document.getElementById('btn-camp-rascunho').addEventListener('click',      () => salvarCampanha('rascunho'));
+document.getElementById('btn-camp-aprovar-direto').addEventListener('click', () => salvarCampanha('aprovado'));
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();
