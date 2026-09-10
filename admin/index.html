@@ -1031,9 +1031,9 @@ async function dispararCampanha(id, nome) {
   const msgEl = document.getElementById('msg-camp');
   msgEl.textContent = '⏳ Iniciando disparo... aguarde.';
   try {
-    const resp = await fetch('/api/admin/campanhas-disparar', {
+    const resp = await fetch('/api/admin/campanhas', {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ action: 'disparar', id }),
     });
     const json = await resp.json();
     msgEl.textContent = json.mensagem || (json.success ? 'Disparo concluído!' : 'Erro no disparo.');
