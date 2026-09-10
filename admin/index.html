@@ -364,6 +364,30 @@
         <textarea id="camp-conteudo" placeholder="Cole aqui o HTML do e-mail..."></textarea>
         <small id="dica-conteudo">Use {{nome}} para personalizar com o nome do destinatário.</small>
       </div>
+      <!-- Mídia WhatsApp (imagem ou vídeo) -->
+      <div class="camp-form-group" id="row-midia" style="display:none">
+        <label>Mídia (imagem ou vídeo)</label>
+        <div id="midia-dropzone" style="border:2px dashed #ccc;border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .2s">
+          <input type="file" id="camp-midia-file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm" style="display:none">
+          <div id="midia-placeholder" style="color:#888;font-size:14px">
+            <div style="font-size:32px;margin-bottom:6px">🖼️</div>
+            Arraste uma imagem ou vídeo aqui, ou <span style="color:#4a90d9;text-decoration:underline;cursor:pointer" id="midia-browse-link">clique para escolher</span>
+            <div style="font-size:12px;margin-top:6px;color:#aaa">JPG, PNG, GIF, WEBP (máx. 10 MB) · MP4, MOV, WEBM (máx. 50 MB)</div>
+          </div>
+          <div id="midia-preview" style="display:none">
+            <img id="midia-preview-img" style="max-height:160px;max-width:100%;border-radius:6px;display:none">
+            <video id="midia-preview-vid" controls style="max-height:160px;max-width:100%;border-radius:6px;display:none"></video>
+            <div style="margin-top:8px">
+              <span id="midia-preview-nome" style="font-size:13px;color:#555"></span>
+              <button type="button" id="midia-remover" style="margin-left:12px;background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px">✕ Remover</button>
+            </div>
+          </div>
+        </div>
+        <small>A mídia é enviada junto com a mensagem de texto (como legenda).</small>
+        <input type="hidden" id="camp-midia-url">
+        <input type="hidden" id="camp-midia-tipo">
+      </div>
+
       <div class="camp-form-group">
         <label>Agendar para (opcional)</label>
         <input type="datetime-local" id="camp-agendado">
@@ -922,9 +946,21 @@ function abrirModalCampanha(camp = null) {
   document.getElementById('camp-conteudo').value = camp?.conteudo_html || camp?.conteudo_text || '';
   document.getElementById('camp-agendado').value = camp?.agendado_para ? camp.agendado_para.slice(0, 16) : '';
 
+  // Mídia
+  document.getElementById('camp-midia-url').value  = camp?.midia_url  || '';
+  document.getElementById('camp-midia-tipo').value = camp?.midia_tipo || '';
+  document.getElementById('camp-midia-file').value = '';
+  midiaArquivoPendente = null;
+  if (camp?.midia_url) {
+    mostrarPreviewMidiaSalva(camp.midia_url, camp.midia_tipo);
+  } else {
+    limparPreviewMidia();
+  }
+
   ['camp-nome','camp-tipo','camp-publico','camp-assunto','camp-conteudo','camp-agendado'].forEach(id => {
     document.getElementById(id).disabled = readonly;
   });
+  document.getElementById('camp-midia-file').disabled = readonly;
 
   document.getElementById('btn-camp-rascunho').style.display     = readonly ? 'none' : '';
   document.getElementById('btn-camp-aprovar-direto').style.display = readonly ? 'none' : '';
@@ -936,6 +972,7 @@ function abrirModalCampanha(camp = null) {
 function atualizarCampTipo() {
   const tipo = document.getElementById('camp-tipo').value;
   document.getElementById('row-assunto').style.display = tipo === 'email' ? '' : 'none';
+  document.getElementById('row-midia').style.display   = tipo === 'whatsapp' ? '' : 'none';
   const lbl = document.getElementById('lbl-conteudo');
   const dica = document.getElementById('dica-conteudo');
   const ta = document.getElementById('camp-conteudo');
@@ -966,22 +1003,51 @@ async function salvarCampanha(statusDestino) {
   if (!conteudo) return alert('Informe o conteúdo da campanha.');
   if (tipo === 'email' && !assunto) return alert('Informe o assunto do e-mail.');
 
-  const payload = {
-    id: campIdAtual,
-    nome, tipo, publico,
-    assunto: assunto || null,
-    conteudo_html: tipo === 'email'    ? conteudo : null,
-    conteudo_text: tipo === 'whatsapp' ? conteudo : null,
-    agendado_para: agendado || null,
-    status: statusDestino,
-  };
-
   const btnId = statusDestino === 'rascunho' ? 'btn-camp-rascunho' : 'btn-camp-aprovar-direto';
   const btn = document.getElementById(btnId);
   const textoOriginal = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Salvando...';
 
+  const el = document.getElementById('msg-camp-modal');
+  el.style.display = 'none';
+
   try {
+    // Se houver arquivo de mídia pendente, fazer upload primeiro
+    let midiaUrl  = document.getElementById('camp-midia-url').value  || null;
+    let midiaTipo = document.getElementById('camp-midia-tipo').value || null;
+
+    if (midiaArquivoPendente) {
+      btn.textContent = '⏳ Enviando mídia...';
+      const b64 = await lerArquivoBase64(midiaArquivoPendente);
+      const upResp = await fetch('/api/admin/campanhas', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ action: 'upload-midia', dados: b64, tipo: midiaArquivoPendente.type }),
+      });
+      const upJson = await upResp.json();
+      if (!upJson.success) {
+        el.className = 'alerta alerta-erro'; el.textContent = upJson.mensagem || 'Erro ao enviar mídia.'; el.style.display = 'block';
+        return;
+      }
+      midiaUrl  = upJson.url;
+      midiaTipo = upJson.midia_tipo;
+      midiaArquivoPendente = null;
+    }
+
+    btn.textContent = '⏳ Salvando...';
+
+    const payload = {
+      id: campIdAtual,
+      nome, tipo, publico,
+      assunto: assunto || null,
+      conteudo_html: tipo === 'email'    ? conteudo : null,
+      conteudo_text: tipo === 'whatsapp' ? conteudo : null,
+      agendado_para: agendado || null,
+      midia_url:  midiaUrl,
+      midia_tipo: midiaTipo,
+      status: statusDestino,
+    };
+
     const resp = await fetch('/api/admin/campanhas', {
       method: campIdAtual ? 'PATCH' : 'POST',
       headers: authHeaders(),
@@ -995,15 +1061,45 @@ async function salvarCampanha(statusDestino) {
       msgEl.textContent = statusDestino === 'rascunho' ? 'Rascunho salvo.' : '✅ Campanha aprovada e pronta para disparo.';
       setTimeout(() => { msgEl.textContent = ''; }, 4000);
     } else {
-      const el = document.getElementById('msg-camp-modal');
       el.className = 'alerta alerta-erro'; el.textContent = json.mensagem || 'Erro ao salvar.'; el.style.display = 'block';
     }
   } catch {
-    const el = document.getElementById('msg-camp-modal');
     el.className = 'alerta alerta-erro'; el.textContent = 'Erro de conexão.'; el.style.display = 'block';
   } finally {
     btn.disabled = false; btn.textContent = textoOriginal;
   }
+}
+
+function lerArquivoBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function mostrarPreviewMidiaSalva(url, tipo) {
+  document.getElementById('midia-placeholder').style.display = 'none';
+  document.getElementById('midia-preview').style.display     = '';
+  const img = document.getElementById('midia-preview-img');
+  const vid = document.getElementById('midia-preview-vid');
+  if (tipo === 'imagem') {
+    img.src = url; img.style.display = ''; vid.style.display = 'none';
+  } else {
+    vid.src = url; vid.style.display = ''; img.style.display = 'none';
+  }
+  document.getElementById('midia-preview-nome').textContent = tipo === 'imagem' ? '🖼️ Imagem salva' : '🎬 Vídeo salvo';
+}
+
+function limparPreviewMidia() {
+  document.getElementById('midia-placeholder').style.display = '';
+  document.getElementById('midia-preview').style.display     = 'none';
+  document.getElementById('midia-preview-img').src = '';
+  document.getElementById('midia-preview-vid').src = '';
+  document.getElementById('camp-midia-url').value  = '';
+  document.getElementById('camp-midia-tipo').value = '';
+  midiaArquivoPendente = null;
 }
 
 async function aprovarCampanha(id, nome, statusAtual) {
@@ -1074,6 +1170,44 @@ document.getElementById('modal-camp-overlay').addEventListener('click', e => {
 document.getElementById('camp-tipo').addEventListener('change', atualizarCampTipo);
 document.getElementById('btn-camp-rascunho').addEventListener('click',      () => salvarCampanha('rascunho'));
 document.getElementById('btn-camp-aprovar-direto').addEventListener('click', () => salvarCampanha('aprovado'));
+
+// ── Dropzone de mídia WhatsApp ─────────────────────────────
+let midiaArquivoPendente = null;
+
+function processarArquivoMidia(file) {
+  if (!file) return;
+  const tiposOk = ['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/quicktime','video/webm'];
+  if (!tiposOk.includes(file.type)) return alert('Formato não suportado. Use JPG, PNG, GIF, WEBP, MP4, MOV ou WEBM.');
+  const limMB = file.type.startsWith('image/') ? 10 : 50;
+  if (file.size > limMB * 1024 * 1024) return alert(`Arquivo muito grande. Limite: ${limMB} MB.`);
+  midiaArquivoPendente = file;
+  document.getElementById('camp-midia-url').value  = '';
+  document.getElementById('camp-midia-tipo').value = '';
+  const url = URL.createObjectURL(file);
+  document.getElementById('midia-placeholder').style.display = 'none';
+  document.getElementById('midia-preview').style.display     = '';
+  const img = document.getElementById('midia-preview-img');
+  const vid = document.getElementById('midia-preview-vid');
+  if (file.type.startsWith('image/')) {
+    img.src = url; img.style.display = ''; vid.style.display = 'none';
+  } else {
+    vid.src = url; vid.style.display = ''; img.style.display = 'none';
+  }
+  document.getElementById('midia-preview-nome').textContent = file.name;
+}
+
+document.getElementById('midia-dropzone').addEventListener('dragover',  e => { e.preventDefault(); document.getElementById('midia-dropzone').style.borderColor = '#4a90d9'; });
+document.getElementById('midia-dropzone').addEventListener('dragleave', ()  => { document.getElementById('midia-dropzone').style.borderColor = '#ccc'; });
+document.getElementById('midia-dropzone').addEventListener('drop',      e => {
+  e.preventDefault(); document.getElementById('midia-dropzone').style.borderColor = '#ccc';
+  processarArquivoMidia(e.dataTransfer.files[0]);
+});
+document.getElementById('midia-browse-link').addEventListener('click', () => document.getElementById('camp-midia-file').click());
+document.getElementById('camp-midia-file').addEventListener('change', e => processarArquivoMidia(e.target.files[0]));
+document.getElementById('midia-remover').addEventListener('click', () => {
+  document.getElementById('camp-midia-file').value = '';
+  limparPreviewMidia();
+});
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();

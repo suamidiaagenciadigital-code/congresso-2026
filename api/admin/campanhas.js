@@ -46,7 +46,7 @@ async function dispararEmail(campanha, destinatarios) {
   return { enviados, falhas };
 }
 
-/* ── Disparo de WhatsApp via Z-API ── */
+/* ── Disparo de WhatsApp via Z-API (texto, imagem ou vídeo) ── */
 async function dispararWhatsApp(campanha, destinatarios) {
   const { ZAPI_TOKEN: token, ZAPI_INSTANCE: instance, ZAPI_CLIENT_TOKEN: clientToken } = process.env;
   let enviados = 0, falhas = 0;
@@ -59,12 +59,25 @@ async function dispararWhatsApp(campanha, destinatarios) {
       falhas++; continue;
     }
     const numero = tel.startsWith('55') ? tel : '55' + tel;
-    const mensagem = (campanha.conteudo_text || '').replace('{{nome}}', d.nome || 'Prezado(a)');
+    const caption = (campanha.conteudo_text || '').replace('{{nome}}', d.nome || 'Prezado(a)');
+
+    let endpoint, payload;
+    if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
+      endpoint = 'send-image';
+      payload  = { phone: numero, image: campanha.midia_url, caption };
+    } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
+      endpoint = 'send-video';
+      payload  = { phone: numero, video: campanha.midia_url, caption };
+    } else {
+      endpoint = 'send-text';
+      payload  = { phone: numero, message: caption };
+    }
+
     try {
-      const resp = await fetch(`https://api.z-api.io/instances/${instance}/token/${token}/send-text`, {
+      const resp = await fetch(`https://api.z-api.io/instances/${instance}/token/${token}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
-        body: JSON.stringify({ phone: numero, message: mensagem }),
+        body: JSON.stringify(payload),
       });
       const json = await resp.json();
       await supabase.from('disparos').update({
@@ -92,7 +105,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const { data, error } = await supabase
       .from('campanhas')
-      .select('id, nome, tipo, publico, assunto, status, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
+      .select('id, nome, tipo, publico, assunto, status, midia_url, midia_tipo, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
       .order('criado_em', { ascending: false });
     if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao consultar campanhas.' });
     const stats = {};
@@ -100,11 +113,41 @@ module.exports = async (req, res) => {
     return res.status(200).json({ success: true, total: data.length, stats, campanhas: data });
   }
 
-  /* ── POST: criar campanha  OU  disparar (action=disparar) ── */
+  /* ── POST ── */
   if (req.method === 'POST') {
     const body = req.body || {};
 
-    /* --- Disparo --- */
+    /* --- Upload de mídia (WhatsApp) --- */
+    if (body.action === 'upload-midia') {
+      const { dados, tipo } = body;
+      if (!dados || !tipo) return res.status(400).json({ success: false, mensagem: 'Dados e tipo obrigatórios.' });
+
+      const exts = {
+        'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp',
+        'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
+      };
+      const ext = exts[tipo];
+      if (!ext) return res.status(400).json({ success: false, mensagem: 'Formato não suportado. Use JPG, PNG, GIF, WEBP, MP4, MOV ou WEBM.' });
+
+      const midiaTipo = tipo.startsWith('image/') ? 'imagem' : 'video';
+      const buffer   = Buffer.from(dados, 'base64');
+
+      // Limite: 10 MB para imagem, 50 MB para vídeo
+      const limite = midiaTipo === 'imagem' ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+      if (buffer.length > limite)
+        return res.status(400).json({ success: false, mensagem: `Arquivo muito grande. Limite: ${midiaTipo === 'imagem' ? '10' : '50'} MB.` });
+
+      const filename = `${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('camp-midia').upload(filename, buffer, {
+        contentType: tipo, upsert: false,
+      });
+      if (upErr) return res.status(500).json({ success: false, mensagem: 'Erro ao salvar mídia: ' + upErr.message });
+
+      const { data: { publicUrl } } = supabase.storage.from('camp-midia').getPublicUrl(filename);
+      return res.status(200).json({ success: true, url: publicUrl, midia_tipo: midiaTipo });
+    }
+
+    /* --- Disparar campanha --- */
     if (body.action === 'disparar') {
       const { id } = body;
       if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
@@ -121,16 +164,12 @@ module.exports = async (req, res) => {
       if (campanha.tipo === 'whatsapp' && (!process.env.ZAPI_TOKEN || !process.env.ZAPI_INSTANCE))
         return res.status(503).json({ success: false, mensagem: 'Credenciais Z-API não configuradas. Adicione ZAPI_TOKEN, ZAPI_INSTANCE e ZAPI_CLIENT_TOKEN no Vercel.' });
 
-      /* Buscar destinatários */
       let destinatarios = [];
       if (campanha.publico === 'inscritos') {
         const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
         const { data } = await supabase.from('inscritos')
           .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null);
-        destinatarios = (data || []).map(r => ({
-          nome: r.nome_social || r.nome_completo,
-          [campo]: r[campo],
-        }));
+        destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
       } else {
         const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
         const { data } = await supabase.from('contatos_externos')
@@ -169,7 +208,7 @@ module.exports = async (req, res) => {
     }
 
     /* --- Criar campanha --- */
-    const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status } = body;
+    const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo } = body;
     if (!nome || !tipo || !publico)
       return res.status(400).json({ success: false, mensagem: 'Campos obrigatórios: nome, tipo, publico.' });
     if (!['email', 'whatsapp'].includes(tipo))
@@ -188,6 +227,8 @@ module.exports = async (req, res) => {
       conteudo_html: conteudo_html || null,
       conteudo_text: conteudo_text || null,
       agendado_para: agendado_para || null,
+      midia_url: midia_url || null,
+      midia_tipo: midia_tipo || null,
       status: statusFinal, ...extra,
     }).select('id').single();
 
@@ -197,7 +238,7 @@ module.exports = async (req, res) => {
 
   /* ── PATCH: atualizar campanha ── */
   if (req.method === 'PATCH') {
-    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico } = req.body || {};
+    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico, midia_url, midia_tipo } = req.body || {};
     if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
 
     const { data: atual, error: fetchErr } = await supabase
@@ -223,6 +264,8 @@ module.exports = async (req, res) => {
       if (conteudo_text !== undefined) campos.conteudo_text = conteudo_text;
       if (agendado_para !== undefined) campos.agendado_para = agendado_para || null;
       if (publico)                     campos.publico       = publico;
+      if (midia_url  !== undefined)    campos.midia_url     = midia_url  || null;
+      if (midia_tipo !== undefined)    campos.midia_tipo    = midia_tipo || null;
     }
     if (!Object.keys(campos).length)
       return res.status(400).json({ success: false, mensagem: 'Nenhum campo para atualizar.' });
