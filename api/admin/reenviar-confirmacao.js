@@ -125,7 +125,7 @@ module.exports = async (req, res) => {
         <td style="background:#f2f5f9;border-radius:0 0 8px 8px;padding:16px 28px;text-align:center;border-top:1px solid #dde3ed">
           <p style="margin:0;font-size:11px;color:#999;line-height:1.6">
             <strong>${EVENTO_NOME}</strong><br>
-            Fenapestalozzi — Federação Nacional das APAEs Pestalozzi<br>
+            Fenapestalozzi — Federação Nacional das Associações Pestalozzi<br>
             Este é um e-mail automático. Não responda a esta mensagem.
           </p>
         </td>
