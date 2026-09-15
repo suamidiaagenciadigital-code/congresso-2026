@@ -1,6 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const jwt     = require('jsonwebtoken');
-const bcrypt  = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -41,6 +40,7 @@ module.exports = async (req, res) => {
     const { data: admin } = await supabase
       .from('admins').select('*').eq('usuario', usuario.trim().toLowerCase()).eq('ativo', true).single();
 
+    const bcrypt = require('bcryptjs');
     if (!admin || !(await bcrypt.compare(senha, admin.senha_hash)))
       return res.status(401).json({ success: false, mensagem: 'Usuário ou senha incorretos.' });
 
@@ -71,6 +71,7 @@ module.exports = async (req, res) => {
     if (senha.length < 8)
       return res.status(400).json({ success: false, mensagem: 'A senha deve ter no mínimo 8 caracteres.' });
 
+    const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash(senha, 12);
     const { error } = await supabase.from('admins').insert({
       nome: nome.trim(),
@@ -105,7 +106,7 @@ module.exports = async (req, res) => {
     if (senha !== undefined) {
       if (senha.length < 8)
         return res.status(400).json({ success: false, mensagem: 'A senha deve ter no mínimo 8 caracteres.' });
-      campos.senha_hash = await bcrypt.hash(senha, 12);
+      campos.senha_hash = await require('bcryptjs').hash(senha, 12);
     }
     if (!Object.keys(campos).length)
       return res.status(400).json({ success: false, mensagem: 'Nenhum campo para atualizar.' });
