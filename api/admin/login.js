@@ -21,10 +21,11 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, mensagem: 'Informe usuário e senha.' });
 
     // Verifica se há admins cadastrados na tabela
-    const { count } = await supabase
+    // Se a tabela não existir ou ocorrer qualquer erro, usa fallback de env vars
+    const { count, error: countErr } = await supabase
       .from('admins').select('*', { count: 'exact', head: true });
 
-    if (count === 0) {
+    if (countErr || count === 0) {
       // Tabela vazia: usa variáveis de ambiente (compatibilidade com acesso inicial)
       if (usuario !== process.env.ADMIN_USER || senha !== process.env.ADMIN_PASS)
         return res.status(401).json({ success: false, mensagem: 'Usuário ou senha incorretos.' });
