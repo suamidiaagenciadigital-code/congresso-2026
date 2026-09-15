@@ -160,6 +160,7 @@
     <button class="tab ativo" data-tab="inscritos">👥 Inscritos</button>
     <button class="tab" data-tab="certificado">🎓 Certificado</button>
     <button class="tab" data-tab="campanhas">📣 Campanhas</button>
+    <button class="tab" data-tab="equipe">🔑 Equipe</button>
   </div>
 
   <!-- ── ABA INSCRITOS ── -->
@@ -322,7 +323,71 @@
 
   </div><!-- /tab-campanhas -->
 
+  <!-- ── ABA EQUIPE ── -->
+  <div class="tab-content" id="tab-equipe">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <h3 style="margin:0 0 4px">Equipe de administradores</h3>
+        <p style="margin:0;font-size:13px;color:#666">Gerencie quem tem acesso ao painel.</p>
+      </div>
+      <button class="btn btn-principal" id="btn-novo-admin">+ Novo administrador</button>
+    </div>
+    <div id="msg-equipe" style="margin-bottom:12px"></div>
+    <div id="aviso-env-vars" style="display:none;background:#fff8e1;border:1px solid #f5c842;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#7a5c00">
+      ⚠️ Você está usando o acesso via variáveis de ambiente. Crie pelo menos um administrador abaixo para habilitar o controle de equipe completo.
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr>
+          <th>Nome</th>
+          <th>Usuário</th>
+          <th>Status</th>
+          <th>Último acesso</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr></thead>
+        <tbody id="tbody-admins">
+          <tr><td colspan="6" class="vazio">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div><!-- /tab-equipe -->
+
 </div><!-- /container -->
+
+<!-- Modal Administrador -->
+<div class="modal-overlay" id="modal-admin-overlay">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h2 id="modal-admin-titulo">Novo administrador</h2>
+      <button class="modal-close" id="modal-admin-fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="msg-admin-modal"></div>
+      <div class="camp-form-group">
+        <label>Nome completo *</label>
+        <input type="text" id="admin-nome" placeholder="Ex: Ana Paula" maxlength="100">
+      </div>
+      <div class="camp-form-group">
+        <label>Usuário (login) *</label>
+        <input type="text" id="admin-usuario" placeholder="Ex: ana.paula" maxlength="50" autocomplete="off">
+        <small>Somente letras minúsculas, números, ponto e hífen. Não pode ser alterado depois.</small>
+      </div>
+      <div class="camp-form-group">
+        <label id="lbl-admin-senha">Senha *</label>
+        <input type="password" id="admin-senha" placeholder="Mínimo 8 caracteres" maxlength="100" autocomplete="new-password">
+      </div>
+      <div class="camp-form-group" id="row-admin-senha2">
+        <label>Confirmar senha *</label>
+        <input type="password" id="admin-senha2" placeholder="Repita a senha" maxlength="100" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-limpar" id="modal-admin-cancelar">Cancelar</button>
+      <button class="btn btn-principal" id="btn-admin-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Campanha (criar / ver) -->
 <div class="modal-overlay" id="modal-camp-overlay">
@@ -463,6 +528,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('tab-' + tab.dataset.tab).classList.add('ativo');
     if (tab.dataset.tab === 'certificado') carregarConfig();
     if (tab.dataset.tab === 'campanhas')   carregarCampanhas();
+    if (tab.dataset.tab === 'equipe')      carregarAdmins();
   });
 });
 
@@ -1207,6 +1273,165 @@ document.getElementById('camp-midia-file').addEventListener('change', e => proce
 document.getElementById('midia-remover').addEventListener('click', () => {
   document.getElementById('camp-midia-file').value = '';
   limparPreviewMidia();
+});
+
+// ─── Aba Equipe ───────────────────────────────────────────
+let adminIdAtual = null;
+
+async function carregarAdmins() {
+  const tbody = document.getElementById('tbody-admins');
+  tbody.innerHTML = '<tr><td colspan="6" class="vazio">Carregando...</td></tr>';
+  try {
+    const resp = await fetch('/api/admin/login', { headers: authHeaders() });
+    const json = await resp.json();
+    if (!json.success || !json.admins) {
+      // Sem registros (acesso via env vars ainda)
+      document.getElementById('aviso-env-vars').style.display = '';
+      tbody.innerHTML = '<tr><td colspan="6" class="vazio">Nenhum administrador cadastrado ainda.</td></tr>';
+      return;
+    }
+    document.getElementById('aviso-env-vars').style.display = json.admins.length === 0 ? '' : 'none';
+    if (!json.admins.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vazio">Nenhum administrador cadastrado ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = json.admins.map(a => `
+      <tr>
+        <td>${esc(a.nome)}</td>
+        <td><code>${esc(a.usuario)}</code></td>
+        <td><span style="padding:2px 10px;border-radius:20px;font-size:12px;background:${a.ativo ? '#e8f5e9' : '#fce4ec'};color:${a.ativo ? '#2e7d32' : '#b71c1c'}">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td>${fmtData(a.ultimo_acesso)}</td>
+        <td>${fmtData(a.criado_em)}</td>
+        <td>
+          <button class="btn" style="padding:4px 10px;font-size:12px" data-admin-id="${a.id}" data-acao="senha">🔑 Senha</button>
+          <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;background:${a.ativo ? '#e74c3c' : '#27ae60'};color:#fff" data-admin-id="${a.id}" data-acao="${a.ativo ? 'desativar' : 'ativar'}" data-nome="${esc(a.nome)}">${a.ativo ? '🚫 Desativar' : '✅ Ativar'}</button>
+          <button class="btn" style="padding:4px 10px;font-size:12px;margin-left:4px;background:#888;color:#fff" data-admin-id="${a.id}" data-acao="remover" data-nome="${esc(a.nome)}">🗑 Remover</button>
+        </td>
+      </tr>`).join('');
+
+    tbody.querySelectorAll('[data-acao]').forEach(btn => {
+      const { adminId, acao, nome } = btn.dataset;
+      if (acao === 'senha')    btn.addEventListener('click', () => abrirModalSenha(adminId));
+      if (acao === 'desativar') btn.addEventListener('click', () => alterarStatusAdmin(adminId, nome, false));
+      if (acao === 'ativar')   btn.addEventListener('click', () => alterarStatusAdmin(adminId, nome, true));
+      if (acao === 'remover')  btn.addEventListener('click', () => removerAdmin(adminId, nome));
+    });
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6" class="vazio" style="color:#c0392b">Erro de conexão.</td></tr>';
+  }
+}
+
+function abrirModalNovoAdmin() {
+  adminIdAtual = null;
+  document.getElementById('modal-admin-titulo').textContent = 'Novo administrador';
+  document.getElementById('lbl-admin-senha').textContent    = 'Senha *';
+  document.getElementById('admin-nome').value    = '';
+  document.getElementById('admin-usuario').value = '';
+  document.getElementById('admin-senha').value   = '';
+  document.getElementById('admin-senha2').value  = '';
+  document.getElementById('admin-usuario').disabled = false;
+  document.getElementById('row-admin-senha2').style.display = '';
+  document.getElementById('msg-admin-modal').innerHTML = '';
+  document.getElementById('modal-admin-overlay').classList.add('aberto');
+}
+
+function abrirModalSenha(id) {
+  adminIdAtual = id;
+  document.getElementById('modal-admin-titulo').textContent = 'Redefinir senha';
+  document.getElementById('lbl-admin-senha').textContent    = 'Nova senha *';
+  document.getElementById('admin-nome').value    = '';
+  document.getElementById('admin-usuario').value = '';
+  document.getElementById('admin-senha').value   = '';
+  document.getElementById('admin-senha2').value  = '';
+  document.getElementById('admin-usuario').disabled = true;
+  document.getElementById('row-admin-senha2').style.display = '';
+  document.getElementById('msg-admin-modal').innerHTML = '';
+  document.getElementById('modal-admin-overlay').classList.add('aberto');
+}
+
+async function salvarAdmin() {
+  const nome    = document.getElementById('admin-nome').value.trim();
+  const usuario = document.getElementById('admin-usuario').value.trim().toLowerCase();
+  const senha   = document.getElementById('admin-senha').value;
+  const senha2  = document.getElementById('admin-senha2').value;
+  const el      = document.getElementById('msg-admin-modal');
+  el.innerHTML  = '';
+
+  if (!adminIdAtual) {
+    if (!nome || !usuario) { el.className='alerta alerta-erro'; el.textContent='Nome e usuário são obrigatórios.'; el.style.display='block'; return; }
+  }
+  if (!senha)  { el.className='alerta alerta-erro'; el.textContent='Informe a senha.'; el.style.display='block'; return; }
+  if (senha !== senha2) { el.className='alerta alerta-erro'; el.textContent='As senhas não coincidem.'; el.style.display='block'; return; }
+
+  const btn = document.getElementById('btn-admin-salvar');
+  btn.disabled = true; btn.textContent = '⏳ Salvando...';
+  try {
+    let resp;
+    if (adminIdAtual) {
+      resp = await fetch('/api/admin/login', {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify({ id: adminIdAtual, senha }),
+      });
+    } else {
+      resp = await fetch('/api/admin/login', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ action: 'criar', nome, usuario, senha }),
+      });
+    }
+    const json = await resp.json();
+    if (json.success) {
+      document.getElementById('modal-admin-overlay').classList.remove('aberto');
+      carregarAdmins();
+      const msgEl = document.getElementById('msg-equipe');
+      msgEl.className = 'alerta alerta-ok'; msgEl.textContent = json.mensagem; msgEl.style.display = 'block';
+      setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+    } else {
+      el.className = 'alerta alerta-erro'; el.textContent = json.mensagem || 'Erro ao salvar.'; el.style.display = 'block';
+    }
+  } catch {
+    el.className = 'alerta alerta-erro'; el.textContent = 'Erro de conexão.'; el.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+async function alterarStatusAdmin(id, nome, ativar) {
+  if (!confirm(`${ativar ? 'Reativar' : 'Desativar'} o administrador "${nome}"?`)) return;
+  const resp = await fetch('/api/admin/login', {
+    method: 'PATCH', headers: authHeaders(),
+    body: JSON.stringify({ id, ativo: ativar }),
+  });
+  const json = await resp.json();
+  const msgEl = document.getElementById('msg-equipe');
+  msgEl.className = json.success ? 'alerta alerta-ok' : 'alerta alerta-erro';
+  msgEl.textContent = json.mensagem || (json.success ? 'Atualizado.' : 'Erro.');
+  msgEl.style.display = 'block';
+  if (json.success) carregarAdmins();
+  setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+}
+
+async function removerAdmin(id, nome) {
+  if (!confirm(`Remover permanentemente o administrador "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  const resp = await fetch('/api/admin/login', {
+    method: 'DELETE', headers: authHeaders(),
+    body: JSON.stringify({ id }),
+  });
+  const json = await resp.json();
+  const msgEl = document.getElementById('msg-equipe');
+  msgEl.className = json.success ? 'alerta alerta-ok' : 'alerta alerta-erro';
+  msgEl.textContent = json.mensagem || (json.success ? 'Removido.' : 'Erro.');
+  msgEl.style.display = 'block';
+  if (json.success) carregarAdmins();
+  setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+}
+
+document.getElementById('btn-novo-admin').addEventListener('click', abrirModalNovoAdmin);
+document.getElementById('modal-admin-fechar').addEventListener('click',  () => document.getElementById('modal-admin-overlay').classList.remove('aberto'));
+document.getElementById('modal-admin-cancelar').addEventListener('click', () => document.getElementById('modal-admin-overlay').classList.remove('aberto'));
+document.getElementById('btn-admin-salvar').addEventListener('click', salvarAdmin);
+document.getElementById('modal-admin-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-admin-overlay'))
+    document.getElementById('modal-admin-overlay').classList.remove('aberto');
 });
 
 // ─── Inicializar ──────────────────────────────────────────
