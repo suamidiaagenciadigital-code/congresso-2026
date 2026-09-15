@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
     const { count, error: countErr } = await supabase
       .from('admins').select('*', { count: 'exact', head: true });
 
-    if (countErr || count === 0) {
+    if (countErr || !count) {
       // Tabela vazia: usa variáveis de ambiente (compatibilidade com acesso inicial)
       if (usuario !== process.env.ADMIN_USER || senha !== process.env.ADMIN_PASS)
         return res.status(401).json({ success: false, mensagem: 'Usuário ou senha incorretos.' });
