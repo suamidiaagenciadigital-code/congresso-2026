@@ -89,6 +89,7 @@
   .btn-upload   { background: #1D4ED8; color: #fff; }
   .btn-aprovar  { background: #1D4ED8; color: #fff; padding: 5px 11px; font-size: .78rem; }
   .btn-disparar { background: #D97706; color: #fff; padding: 5px 11px; font-size: .78rem; }
+  .btn-testar   { background: #0891B2; color: #fff; padding: 5px 11px; font-size: .78rem; }
   .btn-relat    { background: #7C3AED; color: #fff; padding: 5px 11px; font-size: .78rem; }
 
   .acoes { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
@@ -386,6 +387,33 @@
       </table>
     </div>
 
+    <!-- Contatos Externos -->
+    <div style="margin-top:32px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0 0 4px;font-family:'Montserrat',sans-serif">Contatos Externos</h3>
+          <p style="margin:0;font-size:13px;color:var(--text-soft)">Importe contatos (nome, e-mail, telefone) para campanhas com público "Externos".</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label class="btn btn-upload" style="cursor:pointer;padding:8px 14px;font-size:.85rem">
+            📂 Importar CSV
+            <input type="file" id="csv-file" accept=".csv" style="display:none">
+          </label>
+          <button class="btn btn-limpar" id="btn-reload-contatos" style="padding:8px 14px;font-size:.85rem">↻ Atualizar</button>
+        </div>
+      </div>
+      <div id="msg-contatos" style="margin-bottom:10px;font-size:.9rem"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastrado em</th><th>Ação</th></tr>
+          </thead>
+          <tbody id="tbody-contatos"><tr><td colspan="6" class="vazio">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+      <div id="paginacao-contatos" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"></div>
+    </div>
+
   </div><!-- /tab-campanhas -->
 
   <!-- ── ABA EQUIPE ── -->
@@ -530,6 +558,27 @@
       <button class="btn btn-limpar"    id="modal-camp-cancelar">Cancelar</button>
       <button class="btn" id="btn-camp-rascunho" style="background:#888;color:#fff">Salvar rascunho</button>
       <button class="btn btn-principal" id="btn-camp-aprovar-direto">Aprovar para disparo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Teste de Envio -->
+<div class="modal-overlay" id="modal-teste-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h2 id="modal-teste-titulo">Envio de Teste</h2>
+      <button class="modal-close" id="modal-teste-fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 16px;font-size:.9rem;color:var(--text-soft)" id="modal-teste-desc"></p>
+      <div id="msg-teste" style="margin-bottom:12px;font-size:.9rem"></div>
+      <label style="display:block;font-size:.75rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-family:'Montserrat',sans-serif" id="label-destino">Destinatário</label>
+      <input type="text" id="teste-destino" placeholder="email@exemplo.com" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.95rem;margin-bottom:4px;font-family:'Open Sans',sans-serif">
+      <p style="font-size:.77rem;color:var(--text-soft);margin:0 0 20px" id="teste-dica">O envio de teste não altera o status da campanha.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="modal-teste-cancelar" style="background:var(--border);color:var(--text)">Cancelar</button>
+      <button class="btn btn-testar" id="btn-enviar-teste">✉ Enviar teste</button>
     </div>
   </div>
 </div>
@@ -1029,16 +1078,17 @@ async function carregarCampanhas() {
       const btnEdit    = `<button class="btn btn-ver"      data-cid="${c.id}" data-cac="editar">Editar</button>`;
       const btnAprovar = `<button class="btn btn-aprovar"  data-cid="${c.id}" data-cac="aprovar">Aprovar</button>`;
       const btnDisp    = `<button class="btn btn-disparar" data-cid="${c.id}" data-cac="disparar">Disparar</button>`;
+      const btnTestar  = `<button class="btn btn-testar"   data-cid="${c.id}" data-cac="testar">✉ Testar</button>`;
       const btnRelat   = `<button class="btn btn-relat"    data-cid="${c.id}" data-cac="relatorio">Relatório</button>`;
       const btnCanc    = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="cancelar">Cancelar</button>`;
 
       let acoes = '';
-      if (c.status === 'rascunho')             acoes = btnEdit  + btnAprovar + btnCanc;
-      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnAprovar + btnCanc;
-      if (c.status === 'aprovado')             acoes = btnVer   + btnDisp    + btnCanc;
-      if (c.status === 'enviando')             acoes = btnVer;
-      if (c.status === 'concluido')            acoes = btnVer   + btnRelat;
-      if (c.status === 'cancelado')            acoes = btnVer;
+      if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnAprovar + btnCanc;
+      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnAprovar + btnCanc;
+      if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnDisp    + btnCanc;
+      if (c.status === 'enviando')             acoes = btnVer   + btnTestar;
+      if (c.status === 'concluido')            acoes = btnVer   + btnTestar + btnRelat;
+      if (c.status === 'cancelado')            acoes = btnVer   + btnTestar;
 
       return `<tr>
         <td>${i + 1}</td>
@@ -1060,6 +1110,7 @@ async function carregarCampanhas() {
         else if (acao === 'disparar')   dispararCampanha(c.id, c.nome);
         else if (acao === 'cancelar')   cancelarCampanha(c.id, c.nome);
         else if (acao === 'relatorio')  verRelatorio(c.id, c.nome);
+        else if (acao === 'testar')     abrirModalTeste(c);
       });
     });
   } catch(e) {
@@ -1501,6 +1552,178 @@ document.getElementById('btn-admin-salvar').addEventListener('click', salvarAdmi
 document.getElementById('modal-admin-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-admin-overlay'))
     document.getElementById('modal-admin-overlay').classList.remove('aberto');
+});
+
+// ─── Modal de Teste ───────────────────────────────────────
+let campTesteAtual = null;
+
+function abrirModalTeste(camp) {
+  campTesteAtual = camp;
+  const overlay = document.getElementById('modal-teste-overlay');
+  document.getElementById('modal-teste-titulo').textContent = `Testar: ${camp.nome}`;
+  const isEmail = camp.tipo === 'email';
+  document.getElementById('modal-teste-desc').textContent =
+    isEmail ? 'Envie um e-mail de teste para verificar o conteúdo antes do disparo real.'
+            : 'Envie uma mensagem de WhatsApp de teste para verificar o conteúdo.';
+  document.getElementById('label-destino').textContent = isEmail ? 'E-mail de destino' : 'Telefone de destino';
+  document.getElementById('teste-destino').placeholder = isEmail ? 'email@exemplo.com' : '(11) 99999-9999';
+  document.getElementById('teste-destino').value = '';
+  document.getElementById('msg-teste').innerHTML = '';
+  overlay.classList.add('aberto');
+}
+
+document.getElementById('modal-teste-fechar').addEventListener('click',   () => document.getElementById('modal-teste-overlay').classList.remove('aberto'));
+document.getElementById('modal-teste-cancelar').addEventListener('click', () => document.getElementById('modal-teste-overlay').classList.remove('aberto'));
+document.getElementById('modal-teste-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-teste-overlay'))
+    document.getElementById('modal-teste-overlay').classList.remove('aberto');
+});
+
+document.getElementById('btn-enviar-teste').addEventListener('click', async () => {
+  if (!campTesteAtual) return;
+  const destino = document.getElementById('teste-destino').value.trim();
+  if (!destino) { document.getElementById('msg-teste').innerHTML = '<span style="color:#c0392b">Preencha o destinatário.</span>'; return; }
+  const btn = document.getElementById('btn-enviar-teste');
+  const msgEl = document.getElementById('msg-teste');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  msgEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token') },
+      body: JSON.stringify({ action: 'enviar-teste', id: campTesteAtual.id, destino }),
+    });
+    const json = await resp.json();
+    if (json.success) {
+      msgEl.innerHTML = `<span style="color:#166534">✅ ${json.mensagem}</span>`;
+    } else {
+      msgEl.innerHTML = `<span style="color:#c0392b">❌ ${json.mensagem}</span>`;
+    }
+  } catch { msgEl.innerHTML = '<span style="color:#c0392b">Erro de conexão.</span>'; }
+  btn.disabled = false; btn.textContent = '✉ Enviar teste';
+});
+
+// ─── Contatos Externos ────────────────────────────────────
+let contatosPaginaAtual = 1;
+const CONTATOS_POR_PAG = 50;
+
+async function carregarContatos(page = 1) {
+  contatosPaginaAtual = page;
+  const tbody = document.getElementById('tbody-contatos');
+  const msgEl = document.getElementById('msg-contatos');
+  tbody.innerHTML = '<tr><td colspan="6" class="vazio">⏳ Carregando…</td></tr>';
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token') },
+      body: JSON.stringify({ action: 'listar-contatos', page, limit: CONTATOS_POR_PAG }),
+    });
+    const json = await resp.json();
+    if (!json.success) { tbody.innerHTML = '<tr><td colspan="6" class="vazio">Erro ao carregar contatos.</td></tr>'; return; }
+
+    if (!json.contatos.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vazio">Nenhum contato cadastrado. Importe um CSV.</td></tr>';
+      document.getElementById('paginacao-contatos').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = json.contatos.map((c, i) => `<tr>
+      <td>${(page - 1) * CONTATOS_POR_PAG + i + 1}</td>
+      <td>${esc(c.nome)}</td>
+      <td>${c.email ? esc(c.email) : '—'}</td>
+      <td>${c.telefone ? esc(c.telefone) : '—'}</td>
+      <td>${fmtData(c.criado_em)}</td>
+      <td><button class="btn btn-excluir" style="padding:4px 9px;font-size:.78rem" data-cid="${c.id}" data-cac="del-contato">Remover</button></td>
+    </tr>`).join('');
+
+    // paginação
+    const totalPags = Math.ceil(json.total / CONTATOS_POR_PAG);
+    const pagDiv = document.getElementById('paginacao-contatos');
+    pagDiv.innerHTML = '';
+    if (totalPags > 1) {
+      for (let p = 1; p <= totalPags; p++) {
+        const b = document.createElement('button');
+        b.className = 'btn' + (p === page ? ' btn-principal' : '');
+        b.style.cssText = 'padding:5px 11px;font-size:.82rem';
+        b.textContent = p;
+        b.addEventListener('click', () => carregarContatos(p));
+        pagDiv.appendChild(b);
+      }
+    }
+    msgEl.textContent = `${json.total} contato(s) cadastrado(s).`;
+
+    document.querySelectorAll('[data-cac="del-contato"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remover este contato?')) return;
+        try {
+          const r = await fetch('/api/admin/campanhas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token') },
+            body: JSON.stringify({ action: 'remover-contato', id: btn.dataset.cid }),
+          });
+          const j = await r.json();
+          if (j.success) carregarContatos(contatosPaginaAtual);
+          else alert('Erro: ' + j.mensagem);
+        } catch { alert('Erro de conexão.'); }
+      });
+    });
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="vazio" style="color:#c0392b">Erro de conexão.</td></tr>';
+  }
+}
+
+document.getElementById('btn-reload-contatos').addEventListener('click', () => carregarContatos(1));
+
+document.getElementById('csv-file').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+  const msgEl = document.getElementById('msg-contatos');
+  msgEl.innerHTML = '⏳ Processando CSV…';
+
+  const text = await file.text();
+  const linhas = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (linhas.length < 2) { msgEl.innerHTML = '<span style="color:#c0392b">CSV vazio ou sem dados.</span>'; return; }
+
+  const header = linhas[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/["""]/g, ''));
+  const iNome = header.findIndex(h => h.includes('nome'));
+  const iEmail = header.findIndex(h => h.includes('email') || h.includes('e-mail'));
+  const iTel = header.findIndex(h => h.includes('tel') || h.includes('fone') || h.includes('whats'));
+
+  if (iNome < 0) { msgEl.innerHTML = '<span style="color:#c0392b">CSV deve ter coluna "nome".</span>'; return; }
+
+  const contatos = linhas.slice(1).map(linha => {
+    const cols = linha.split(/[,;]/).map(c => c.trim().replace(/^[""]|[""]$/g, ''));
+    return {
+      nome: iNome  >= 0 ? (cols[iNome]  || '') : '',
+      email: iEmail >= 0 ? (cols[iEmail] || '') : '',
+      telefone: iTel >= 0 ? (cols[iTel] || '') : '',
+    };
+  }).filter(c => c.nome);
+
+  if (!contatos.length) { msgEl.innerHTML = '<span style="color:#c0392b">Nenhum contato válido no CSV.</span>'; return; }
+
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionStorage.getItem('admin_token') },
+      body: JSON.stringify({ action: 'importar-contatos', contatos }),
+    });
+    const json = await resp.json();
+    if (json.success) {
+      msgEl.innerHTML = `<span style="color:#166534">✅ ${json.mensagem}</span>`;
+      carregarContatos(1);
+    } else {
+      msgEl.innerHTML = `<span style="color:#c0392b">❌ ${json.mensagem}</span>`;
+    }
+  } catch { msgEl.innerHTML = '<span style="color:#c0392b">Erro de conexão.</span>'; }
+  this.value = '';
+});
+
+// carregar contatos ao entrar na aba
+document.querySelectorAll('.nav-item').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (tab.dataset.tab === 'campanhas') carregarContatos(1);
+  });
 });
 
 // ─── Inicializar ──────────────────────────────────────────

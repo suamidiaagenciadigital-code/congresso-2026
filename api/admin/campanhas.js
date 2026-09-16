@@ -207,6 +207,108 @@ module.exports = async (req, res) => {
       });
     }
 
+    /* --- Envio de teste (sem alterar status da campanha) --- */
+    if (body.action === 'enviar-teste') {
+      const { id, destino } = body;
+      if (!id || !destino) return res.status(400).json({ success: false, mensagem: 'ID e destino obrigatórios.' });
+
+      const { data: campanha, error: campErr } = await supabase
+        .from('campanhas').select('*').eq('id', id).single();
+      if (campErr || !campanha)
+        return res.status(404).json({ success: false, mensagem: 'Campanha não encontrada.' });
+
+      if (campanha.tipo === 'email') {
+        const resendKey = process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY;
+        if (!resendKey) return res.status(503).json({ success: false, mensagem: 'Chave Resend não configurada.' });
+        const resend = new Resend(resendKey);
+        const from = process.env.RESEND_FROM_MARKETING || process.env.RESEND_FROM
+          || 'XVII Congresso Fenapestalozzi <noreply@congressopestalozzi.org.br>';
+        const html = (campanha.conteudo_html || '<p>Sem conteúdo HTML.</p>').replace('{{nome}}', 'Teste')
+          + '\n<p style="font-size:11px;color:#999;text-align:center;margin-top:24px">[E-mail de teste — não é um disparo real]</p>';
+        try {
+          await resend.emails.send({ from, to: destino, subject: '[TESTE] ' + (campanha.assunto || campanha.nome), html });
+          return res.status(200).json({ success: true, mensagem: `E-mail de teste enviado para ${destino}.` });
+        } catch (e) {
+          return res.status(500).json({ success: false, mensagem: 'Erro ao enviar: ' + e.message });
+        }
+      }
+
+      if (campanha.tipo === 'whatsapp') {
+        const { ZAPI_TOKEN: token, ZAPI_INSTANCE: instance, ZAPI_CLIENT_TOKEN: clientToken } = process.env;
+        if (!token || !instance) return res.status(503).json({ success: false, mensagem: 'Credenciais Z-API não configuradas.' });
+        const tel = destino.replace(/\D/g, '');
+        const numero = tel.startsWith('55') ? tel : '55' + tel;
+        const caption = (campanha.conteudo_text || '').replace('{{nome}}', 'Teste');
+        let endpoint, payload;
+        if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
+          endpoint = 'send-image'; payload = { phone: numero, image: campanha.midia_url, caption };
+        } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
+          endpoint = 'send-video'; payload = { phone: numero, video: campanha.midia_url, caption };
+        } else {
+          endpoint = 'send-text'; payload = { phone: numero, message: caption };
+        }
+        try {
+          const resp = await fetch(`https://api.z-api.io/instances/${instance}/token/${token}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
+            body: JSON.stringify(payload),
+          });
+          const json = await resp.json();
+          if (json.zaapId) return res.status(200).json({ success: true, mensagem: `WhatsApp de teste enviado para ${destino}.` });
+          return res.status(500).json({ success: false, mensagem: 'Falha Z-API: ' + JSON.stringify(json).slice(0, 200) });
+        } catch (e) {
+          return res.status(500).json({ success: false, mensagem: 'Erro ao enviar: ' + e.message });
+        }
+      }
+
+      return res.status(400).json({ success: false, mensagem: 'Tipo de campanha inválido.' });
+    }
+
+    /* --- Importar contatos externos (CSV) --- */
+    if (body.action === 'importar-contatos') {
+      const { contatos } = body;
+      if (!Array.isArray(contatos) || !contatos.length)
+        return res.status(400).json({ success: false, mensagem: 'Lista de contatos obrigatória.' });
+
+      const rows = contatos
+        .map(c => ({
+          nome: (c.nome || '').trim(),
+          email: (c.email || '').trim().toLowerCase() || null,
+          telefone: (c.telefone || '').trim() || null,
+          ativo: true,
+        }))
+        .filter(c => c.nome);
+
+      if (!rows.length) return res.status(400).json({ success: false, mensagem: 'Nenhum contato válido.' });
+
+      const { error } = await supabase.from('contatos_externos').insert(rows);
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao importar: ' + error.message });
+      return res.status(200).json({ success: true, mensagem: `${rows.length} contatos importados.`, total: rows.length });
+    }
+
+    /* --- Listar contatos externos --- */
+    if (body.action === 'listar-contatos') {
+      const page  = parseInt(body.page  || 1);
+      const limit = parseInt(body.limit || 50);
+      const from  = (page - 1) * limit;
+      const { data, error, count } = await supabase
+        .from('contatos_externos')
+        .select('id, nome, email, telefone, ativo, criado_em', { count: 'exact' })
+        .order('criado_em', { ascending: false })
+        .range(from, from + limit - 1);
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao listar contatos.' });
+      return res.status(200).json({ success: true, contatos: data || [], total: count || 0, page, limit });
+    }
+
+    /* --- Remover contato externo --- */
+    if (body.action === 'remover-contato') {
+      const { id } = body;
+      if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
+      const { error } = await supabase.from('contatos_externos').delete().eq('id', id);
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao remover contato.' });
+      return res.status(200).json({ success: true, mensagem: 'Contato removido.' });
+    }
+
     /* --- Criar campanha --- */
     const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo } = body;
     if (!nome || !tipo || !publico)
