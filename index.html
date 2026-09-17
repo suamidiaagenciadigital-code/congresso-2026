@@ -747,10 +747,7 @@ document.getElementById('form-inscricao').addEventListener('submit', async funct
     const resp=await fetch('/api/inscrever',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});
     const json=await resp.json();
     if(json.success){
-      document.getElementById('form-inscricao').style.display='none';
-      document.getElementById('progress-bar').style.display='none';
-      document.getElementById('msg-sucesso').style.display='block';
-      try{ window.parent.postMessage({tipo:'congresso_altura',altura:document.body.scrollHeight},'*'); }catch(e){}
+      window.top.location.href = 'https://fenapestalozzi.org.br/obrigado/';
     } else {
       alert(json.mensagem||'Erro ao processar inscrição. Tente novamente.');
       if(typeof grecaptcha !== 'undefined') grecaptcha.reset();
