@@ -4,6 +4,13 @@ const { Resend } = require('resend');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+async function getConfigs(...chaves) {
+  const { data } = await supabase.from('configuracoes').select('chave, valor').in('chave', chaves);
+  const map = {};
+  (data || []).forEach(r => { if (r.valor) map[r.chave] = r.valor; });
+  return map;
+}
+
 function autenticar(req) {
   try {
     const token = (req.headers.authorization || '').replace('Bearer ', '');
@@ -12,10 +19,13 @@ function autenticar(req) {
   } catch { return false; }
 }
 
-/* ── Disparo de e-mail via Resend Pro ── */
+/* ── Disparo de e-mail via Resend ── */
 async function dispararEmail(campanha, destinatarios) {
-  const resend = new Resend(process.env.RESEND_API_KEY_PRO);
-  const from = process.env.RESEND_FROM_MARKETING || process.env.RESEND_FROM
+  const cfg = await getConfigs('resend_key', 'resend_from', 'resend_from_marketing');
+  const apiKey = cfg.resend_key || process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY;
+  const resend = new Resend(apiKey);
+  const from = cfg.resend_from_marketing || cfg.resend_from
+    || process.env.RESEND_FROM_MARKETING || process.env.RESEND_FROM
     || 'XVII Congresso Fenapestalozzi <noreply@congressopestalozzi.org.br>';
   const BASE_URL = process.env.BASE_URL || 'https://congressopestalozzi.vercel.app';
 
@@ -46,9 +56,11 @@ async function dispararEmail(campanha, destinatarios) {
   return { enviados, falhas };
 }
 
-/* ── Disparo de WhatsApp via Z-API (texto, imagem ou vídeo) ── */
+/* ── Disparo de WhatsApp via Meta Cloud API ── */
 async function dispararWhatsApp(campanha, destinatarios) {
-  const { ZAPI_TOKEN: token, ZAPI_INSTANCE: instance, ZAPI_CLIENT_TOKEN: clientToken } = process.env;
+  const cfg = await getConfigs('whatsapp_token', 'whatsapp_phone_id');
+  const token   = cfg.whatsapp_token   || process.env.WHATSAPP_TOKEN;
+  const phoneId = cfg.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID;
   let enviados = 0, falhas = 0;
 
   for (const d of destinatarios) {
@@ -59,40 +71,38 @@ async function dispararWhatsApp(campanha, destinatarios) {
       falhas++; continue;
     }
     const numero = tel.startsWith('55') ? tel : '55' + tel;
-    const caption = (campanha.conteudo_text || '').replace('{{nome}}', d.nome || 'Prezado(a)');
+    const texto  = (campanha.conteudo_text || '').replace('{{nome}}', d.nome || 'Prezado(a)');
 
-    let endpoint, payload;
+    let body;
     if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
-      endpoint = 'send-image';
-      payload  = { phone: numero, image: campanha.midia_url, caption };
+      body = { messaging_product: 'whatsapp', to: numero, type: 'image', image: { link: campanha.midia_url, caption: texto } };
     } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
-      endpoint = 'send-video';
-      payload  = { phone: numero, video: campanha.midia_url, caption };
+      body = { messaging_product: 'whatsapp', to: numero, type: 'video', video: { link: campanha.midia_url, caption: texto } };
     } else {
-      endpoint = 'send-text';
-      payload  = { phone: numero, message: caption };
+      body = { messaging_product: 'whatsapp', to: numero, type: 'text', text: { body: texto } };
     }
 
     try {
-      const resp = await fetch(`https://api.z-api.io/instances/${instance}/token/${token}/${endpoint}`, {
+      const resp = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
-        body: JSON.stringify(payload),
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const json = await resp.json();
+      const ok = !json.error && json.messages?.[0]?.id;
       await supabase.from('disparos').update({
-        status: json.zaapId ? 'enviado' : 'falhou',
-        provider_id: json.zaapId || null,
-        erro: json.zaapId ? null : JSON.stringify(json).slice(0, 200),
+        status: ok ? 'enviado' : 'falhou',
+        provider_id: json.messages?.[0]?.id || null,
+        erro: ok ? null : JSON.stringify(json.error || json).slice(0, 200),
         enviado_em: new Date().toISOString(),
       }).eq('campanha_id', campanha.id).eq('destinatario', d.telefone);
-      if (json.zaapId) enviados++; else falhas++;
+      if (ok) enviados++; else falhas++;
     } catch (e) {
       await supabase.from('disparos').update({ status: 'falhou', erro: e.message?.slice(0, 200) })
         .eq('campanha_id', campanha.id).eq('destinatario', d.telefone);
       falhas++;
     }
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1000));
   }
   return { enviados, falhas };
 }
@@ -159,10 +169,11 @@ module.exports = async (req, res) => {
       if (campanha.status !== 'aprovado')
         return res.status(400).json({ success: false, mensagem: 'Apenas campanhas aprovadas podem ser disparadas.' });
 
-      if (campanha.tipo === 'email' && !process.env.RESEND_API_KEY_PRO)
-        return res.status(503).json({ success: false, mensagem: 'Credencial de e-mail não configurada. Adicione RESEND_API_KEY_PRO no Vercel.' });
-      if (campanha.tipo === 'whatsapp' && (!process.env.ZAPI_TOKEN || !process.env.ZAPI_INSTANCE))
-        return res.status(503).json({ success: false, mensagem: 'Credenciais Z-API não configuradas. Adicione ZAPI_TOKEN, ZAPI_INSTANCE e ZAPI_CLIENT_TOKEN no Vercel.' });
+      const cfgDisp = await getConfigs('resend_key', 'whatsapp_token', 'whatsapp_phone_id');
+      if (campanha.tipo === 'email' && !(cfgDisp.resend_key || process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY))
+        return res.status(503).json({ success: false, mensagem: 'Chave Resend não configurada. Adicione em Configurações ou no Vercel.' });
+      if (campanha.tipo === 'whatsapp' && !(cfgDisp.whatsapp_token || process.env.WHATSAPP_TOKEN) || !(cfgDisp.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID))
+        return res.status(503).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas. Adicione em Configurações ou no Vercel.' });
 
       let destinatarios = [];
       if (campanha.publico === 'inscritos') {
@@ -234,28 +245,31 @@ module.exports = async (req, res) => {
       }
 
       if (campanha.tipo === 'whatsapp') {
-        const { ZAPI_TOKEN: token, ZAPI_INSTANCE: instance, ZAPI_CLIENT_TOKEN: clientToken } = process.env;
-        if (!token || !instance) return res.status(503).json({ success: false, mensagem: 'Credenciais Z-API não configuradas.' });
+        const cfgWa = await getConfigs('whatsapp_token', 'whatsapp_phone_id');
+        const token   = cfgWa.whatsapp_token   || process.env.WHATSAPP_TOKEN;
+        const phoneId = cfgWa.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID;
+        if (!token || !phoneId) return res.status(503).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas. Acesse Configurações.' });
         const tel = destino.replace(/\D/g, '');
         const numero = tel.startsWith('55') ? tel : '55' + tel;
-        const caption = (campanha.conteudo_text || '').replace('{{nome}}', 'Teste');
-        let endpoint, payload;
+        const texto = (campanha.conteudo_text || '').replace('{{nome}}', 'Teste');
+        let body;
         if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
-          endpoint = 'send-image'; payload = { phone: numero, image: campanha.midia_url, caption };
+          body = { messaging_product: 'whatsapp', to: numero, type: 'image', image: { link: campanha.midia_url, caption: texto } };
         } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
-          endpoint = 'send-video'; payload = { phone: numero, video: campanha.midia_url, caption };
+          body = { messaging_product: 'whatsapp', to: numero, type: 'video', video: { link: campanha.midia_url, caption: texto } };
         } else {
-          endpoint = 'send-text'; payload = { phone: numero, message: caption };
+          body = { messaging_product: 'whatsapp', to: numero, type: 'text', text: { body: texto } };
         }
         try {
-          const resp = await fetch(`https://api.z-api.io/instances/${instance}/token/${token}/${endpoint}`, {
+          const resp = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Client-Token': clientToken },
-            body: JSON.stringify(payload),
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
           });
           const json = await resp.json();
-          if (json.zaapId) return res.status(200).json({ success: true, mensagem: `WhatsApp de teste enviado para ${destino}.` });
-          return res.status(500).json({ success: false, mensagem: 'Falha Z-API: ' + JSON.stringify(json).slice(0, 200) });
+          const ok = !json.error && json.messages?.[0]?.id;
+          if (ok) return res.status(200).json({ success: true, mensagem: `WhatsApp de teste enviado para ${destino}.` });
+          return res.status(500).json({ success: false, mensagem: 'Falha Meta API: ' + JSON.stringify(json.error || json).slice(0, 200) });
         } catch (e) {
           return res.status(500).json({ success: false, mensagem: 'Erro ao enviar: ' + e.message });
         }
@@ -307,6 +321,43 @@ module.exports = async (req, res) => {
       const { error } = await supabase.from('contatos_externos').delete().eq('id', id);
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao remover contato.' });
       return res.status(200).json({ success: true, mensagem: 'Contato removido.' });
+    }
+
+    /* --- Ler configurações --- */
+    if (body.action === 'get-config') {
+      const chaves = ['resend_key', 'resend_from', 'resend_from_marketing', 'whatsapp_token', 'whatsapp_phone_id', 'whatsapp_waba_id', 'base_url'];
+      const cfg = await getConfigs(...chaves);
+      const mascarar = (v) => v ? '••••••••' : '';
+      return res.status(200).json({
+        success: true,
+        config: {
+          resend_key:              mascarar(cfg.resend_key),
+          resend_from:             cfg.resend_from             || '',
+          resend_from_marketing:   cfg.resend_from_marketing   || '',
+          whatsapp_token:          mascarar(cfg.whatsapp_token),
+          whatsapp_phone_id:       cfg.whatsapp_phone_id       || '',
+          whatsapp_waba_id:        cfg.whatsapp_waba_id        || '',
+          base_url:                cfg.base_url                || '',
+        },
+      });
+    }
+
+    /* --- Salvar configurações --- */
+    if (body.action === 'save-config') {
+      const { config } = body;
+      if (!config || typeof config !== 'object')
+        return res.status(400).json({ success: false, mensagem: 'Config inválida.' });
+
+      const permitidas = ['resend_key', 'resend_from', 'resend_from_marketing', 'whatsapp_token', 'whatsapp_phone_id', 'whatsapp_waba_id', 'base_url'];
+      const upserts = Object.entries(config)
+        .filter(([k, v]) => permitidas.includes(k) && v !== undefined)
+        .map(([k, v]) => ({ chave: k, valor: String(v).trim(), atualizado_em: new Date().toISOString() }));
+
+      if (!upserts.length) return res.status(400).json({ success: false, mensagem: 'Nenhum campo para salvar.' });
+
+      const { error } = await supabase.from('configuracoes').upsert(upserts, { onConflict: 'chave' });
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao salvar: ' + error.message });
+      return res.status(200).json({ success: true, mensagem: 'Configurações salvas.' });
     }
 
     /* --- Criar campanha --- */

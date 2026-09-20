@@ -212,6 +212,10 @@
         <span class="nav-icon">🔑</span>
         <span class="nav-label">Equipe</span>
       </button>
+      <button class="tab" data-tab="config">
+        <span class="nav-icon">⚙</span>
+        <span class="nav-label">Configurações</span>
+      </button>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -446,6 +450,71 @@
     </div>
   </div><!-- /tab-equipe -->
 
+  <!-- ── ABA CONFIGURAÇÕES ── -->
+  <div class="tab-content" id="tab-config">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <h3 style="margin:0 0 4px;font-family:'Montserrat',sans-serif">Configurações do sistema</h3>
+        <p style="margin:0;font-size:13px;color:#666">Credenciais salvas no banco de dados — sobrescrevem variáveis de ambiente do Vercel.</p>
+      </div>
+      <button class="btn btn-principal" id="btn-salvar-config">Salvar configurações</button>
+    </div>
+    <div id="msg-config" style="margin-bottom:16px;font-size:13px"></div>
+
+    <!-- E-mail -->
+    <div class="card" style="margin-bottom:20px">
+      <h4 style="margin:0 0 16px;color:#D52B27;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif">✉ E-mail — Resend</h4>
+      <div style="display:grid;gap:14px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">API Key</label>
+          <input type="password" id="cfg-resend-key" placeholder="re_xxxxxxxxxxxx" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+          <p style="margin:4px 0 0;font-size:11px;color:#999">Obtida em resend.com/api-keys. Deixe em branco para manter o valor atual.</p>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Remetente padrão (FROM)</label>
+          <input type="text" id="cfg-resend-from" placeholder="Fenapestalozzi <noreply@congressopestalozzi.org.br>" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Remetente marketing (campanhas em massa)</label>
+          <input type="text" id="cfg-resend-from-mkt" placeholder="XVII Congresso Fenapestalozzi <noreply@congressopestalozzi.org.br>" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+        </div>
+      </div>
+    </div>
+
+    <!-- WhatsApp -->
+    <div class="card" style="margin-bottom:20px">
+      <h4 style="margin:0 0 4px;color:#128C7E;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif">📱 WhatsApp — Meta Cloud API</h4>
+      <p style="margin:0 0 16px;font-size:12px;color:#888">Obtidas em developers.facebook.com após criar o app WhatsApp Business.</p>
+      <div style="display:grid;gap:14px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Token de acesso permanente (WHATSAPP_TOKEN)</label>
+          <input type="password" id="cfg-wa-token" placeholder="EAAxxxxxxxxxx..." style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+          <p style="margin:4px 0 0;font-size:11px;color:#999">Deixe em branco para manter o valor atual.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Phone Number ID</label>
+            <input type="text" id="cfg-wa-phone-id" placeholder="1234567890123456" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">WABA ID</label>
+            <input type="text" id="cfg-wa-waba-id" placeholder="1234567890123456" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sistema -->
+    <div class="card">
+      <h4 style="margin:0 0 16px;color:#555;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-family:'Montserrat',sans-serif">⚙ Sistema</h4>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">URL base (BASE_URL)</label>
+        <input type="text" id="cfg-base-url" placeholder="https://congressopestalozzi.vercel.app" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+        <p style="margin:4px 0 0;font-size:11px;color:#999">Usada nos links de descadastro nos e-mails.</p>
+      </div>
+    </div>
+  </div><!-- /tab-config -->
+
     </div><!-- /content -->
   </div><!-- /main-area -->
 </div><!-- /layout -->
@@ -642,11 +711,12 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('ativo'));
     tab.classList.add('ativo');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('ativo');
-    const titulos = { inscritos: 'Inscritos', certificado: 'Certificado', campanhas: 'Campanhas', equipe: 'Equipe' };
+    const titulos = { inscritos: 'Inscritos', certificado: 'Certificado', campanhas: 'Campanhas', equipe: 'Equipe', config: 'Configurações' };
     document.getElementById('topbar-title').textContent = titulos[tab.dataset.tab] || '';
     if (tab.dataset.tab === 'certificado') carregarConfig();
     if (tab.dataset.tab === 'campanhas')   carregarCampanhas();
     if (tab.dataset.tab === 'equipe')      carregarAdmins();
+    if (tab.dataset.tab === 'config')      carregarConfiguracoes();
   });
 });
 
@@ -1719,11 +1789,60 @@ document.getElementById('csv-file').addEventListener('change', async function() 
   this.value = '';
 });
 
-// carregar contatos ao entrar na aba
+// carregar contatos ao entrar na aba campanhas
 document.querySelectorAll('.nav-item').forEach(tab => {
   tab.addEventListener('click', () => {
     if (tab.dataset.tab === 'campanhas') carregarContatos(1);
   });
+});
+
+// ─── Configurações do sistema (API keys) ──────────────────
+async function carregarConfiguracoes() {
+  try {
+    const r = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'get-config' }),
+    });
+    const j = await r.json();
+    if (!j.success) return;
+    const c = j.config;
+    document.getElementById('cfg-resend-key').placeholder    = c.resend_key    ? '(chave salva — deixe em branco para manter)' : 're_xxxxxxxxxxxx';
+    document.getElementById('cfg-resend-from').value          = c.resend_from             || '';
+    document.getElementById('cfg-resend-from-mkt').value      = c.resend_from_marketing   || '';
+    document.getElementById('cfg-wa-token').placeholder       = c.whatsapp_token ? '(token salvo — deixe em branco para manter)' : 'EAAxxxxxxxxxx...';
+    document.getElementById('cfg-wa-phone-id').value          = c.whatsapp_phone_id || '';
+    document.getElementById('cfg-wa-waba-id').value           = c.whatsapp_waba_id  || '';
+    document.getElementById('cfg-base-url').value             = c.base_url || '';
+  } catch(e) { console.error('Erro ao carregar config:', e); }
+}
+
+document.getElementById('btn-salvar-config').addEventListener('click', async () => {
+  const config = {};
+  const resendKey = document.getElementById('cfg-resend-key').value.trim();
+  if (resendKey) config.resend_key = resendKey;
+  config.resend_from           = document.getElementById('cfg-resend-from').value.trim();
+  config.resend_from_marketing = document.getElementById('cfg-resend-from-mkt').value.trim();
+  const waToken = document.getElementById('cfg-wa-token').value.trim();
+  if (waToken) config.whatsapp_token = waToken;
+  config.whatsapp_phone_id = document.getElementById('cfg-wa-phone-id').value.trim();
+  config.whatsapp_waba_id  = document.getElementById('cfg-wa-waba-id').value.trim();
+  config.base_url          = document.getElementById('cfg-base-url').value.trim();
+
+  const msgEl = document.getElementById('msg-config');
+  msgEl.innerHTML = '<span style="color:#666">Salvando...</span>';
+  try {
+    const r = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'save-config', config }),
+    });
+    const j = await r.json();
+    msgEl.innerHTML = j.success
+      ? '<span style="color:green;font-weight:600">✔ Configurações salvas com sucesso.</span>'
+      : `<span style="color:red">Erro: ${esc(j.mensagem)}</span>`;
+    if (j.success) carregarConfiguracoes();
+  } catch(e) {
+    msgEl.innerHTML = '<span style="color:red">Erro de conexão.</span>';
+  }
 });
 
 // ─── Inicializar ──────────────────────────────────────────
