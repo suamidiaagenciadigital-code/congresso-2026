@@ -202,8 +202,11 @@ module.exports = async (req, res) => {
         destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
       } else {
         const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
-        const { data } = await supabase.from('contatos_externos')
+        const listaNome = campanha.publico.startsWith('externos:') ? campanha.publico.slice(9) : null;
+        let extQ = supabase.from('contatos_externos')
           .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null);
+        if (listaNome) extQ = extQ.eq('lista', listaNome);
+        const { data } = await extQ;
         if (campanha.tipo === 'email') {
           const { data: desc } = await supabase.from('descadastros').select('email');
           const descSet = new Set((desc || []).map(d => d.email.toLowerCase()));
@@ -519,7 +522,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, mensagem: 'Campos obrigatórios: nome, tipo, publico.' });
     if (!['email', 'whatsapp'].includes(tipo))
       return res.status(400).json({ success: false, mensagem: 'Tipo inválido.' });
-    if (!['inscritos', 'externos'].includes(publico))
+    if (!['inscritos', 'externos'].includes(publico) && !publico.startsWith('externos:'))
       return res.status(400).json({ success: false, mensagem: 'Público inválido.' });
     if (tipo === 'email' && !assunto)
       return res.status(400).json({ success: false, mensagem: 'Assunto obrigatório para campanhas de e-mail.' });
