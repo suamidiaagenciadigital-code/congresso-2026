@@ -652,6 +652,31 @@
   </div>
 </div>
 
+<!-- Modal relatório -->
+<div class="modal-overlay" id="modal-relat-overlay">
+  <div class="modal" style="max-width:860px;width:95%">
+    <div class="modal-header">
+      <h2 id="modal-relat-titulo">Relatório</h2>
+      <button class="modal-close" id="modal-relat-fechar">&times;</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div id="modal-relat-stats"></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr>
+            <th>Nome</th><th>Destinatário</th><th>Status</th>
+            <th>Abertura</th><th>Clique</th><th>Erro</th>
+          </tr></thead>
+          <tbody id="modal-relat-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="modal-relat-fechar2" style="background:var(--border);color:var(--text)">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal detalhes -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -1156,7 +1181,7 @@ async function carregarCampanhas() {
       if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnAprovar + btnCanc;
       if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnAprovar + btnCanc;
       if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnDisp    + btnCanc;
-      if (c.status === 'enviando')             acoes = btnVer   + btnTestar;
+      if (c.status === 'enviando')             acoes = btnVer   + btnTestar + btnRelat;
       if (c.status === 'concluido')            acoes = btnVer   + btnTestar + btnRelat;
       if (c.status === 'cancelado')            acoes = btnVer   + btnTestar;
 
@@ -1407,14 +1432,80 @@ async function cancelarCampanha(id, nome) {
   } catch { alert('Erro de conexão.'); }
 }
 
-function verRelatorio(id, nome) {
-  alert(`Relatório da campanha "${nome}" estará disponível após o primeiro disparo real.\n\nVocê verá: total enviados, entregues, aberturas, cliques e falhas.`);
+async function verRelatorio(id, nome) {
+  const overlay = document.getElementById('modal-relat-overlay');
+  document.getElementById('modal-relat-titulo').textContent = `Relatório — ${nome}`;
+  document.getElementById('modal-relat-stats').innerHTML = '<span style="color:#888">Carregando...</span>';
+  document.getElementById('modal-relat-tbody').innerHTML = '<tr><td colspan="6" class="vazio">Carregando...</td></tr>';
+  overlay.classList.add('aberto');
+
+  try {
+    const r = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'get-relatorio', id, page: 1, limit: 500 }),
+    });
+    const j = await r.json();
+    if (!j.success) { document.getElementById('modal-relat-stats').innerHTML = `<span style="color:red">${esc(j.mensagem)}</span>`; return; }
+
+    const s = j.stats;
+    const pct = (n) => s.total ? Math.round(n / s.total * 100) : 0;
+    document.getElementById('modal-relat-stats').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px">
+        <div style="background:#f8f8f8;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#333">${s.total}</div>
+          <div style="font-size:11px;color:#888">Total</div>
+        </div>
+        <div style="background:#e8f5e9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#2e7d32">${s.enviados}</div>
+          <div style="font-size:11px;color:#555">Enviados (${pct(s.enviados)}%)</div>
+        </div>
+        <div style="background:#fce4ec;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#c62828">${s.falhas}</div>
+          <div style="font-size:11px;color:#555">Falhas (${pct(s.falhas)}%)</div>
+        </div>
+        <div style="background:#e3f2fd;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#1565c0">${s.abertos}</div>
+          <div style="font-size:11px;color:#555">Abertos (${pct(s.abertos)}%)</div>
+        </div>
+        <div style="background:#f3e5f5;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#6a1b9a">${s.clicados}</div>
+          <div style="font-size:11px;color:#555">Cliques (${pct(s.clicados)}%)</div>
+        </div>
+        ${s.pendentes ? `<div style="background:#fff8e1;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:1.4rem;font-weight:700;color:#e65100">${s.pendentes}</div>
+          <div style="font-size:11px;color:#555">Pendentes</div>
+        </div>` : ''}
+      </div>`;
+
+    const statusBadge = (d) => {
+      const cores = { enviado: '#2e7d32', falhou: '#c62828', pendente: '#e65100' };
+      return `<span style="background:${cores[d.status]||'#888'};color:#fff;padding:2px 7px;border-radius:10px;font-size:11px">${d.status}</span>`;
+    };
+    const rows = (j.disparos || []).map(d => `<tr>
+      <td>${esc(d.nome||'—')}</td>
+      <td style="font-size:12px">${esc(d.destinatario||'—')}</td>
+      <td>${statusBadge(d)}</td>
+      <td style="font-size:12px">${d.aberto_em ? '✅ ' + fmtData(d.aberto_em) : '—'}</td>
+      <td style="font-size:12px">${d.clicado_em ? '✅ ' + fmtData(d.clicado_em) : '—'}</td>
+      <td style="font-size:11px;color:#c00">${esc(d.erro||'')}</td>
+    </tr>`).join('');
+    document.getElementById('modal-relat-tbody').innerHTML = rows || '<tr><td colspan="6" class="vazio">Nenhum registro</td></tr>';
+  } catch(e) {
+    document.getElementById('modal-relat-stats').innerHTML = '<span style="color:red">Erro ao carregar relatório.</span>';
+  }
 }
 
 function fecharModalCampanha() {
   document.getElementById('modal-camp-overlay').classList.remove('aberto');
   campIdAtual = null;
 }
+
+['modal-relat-fechar','modal-relat-fechar2'].forEach(id => {
+  document.getElementById(id).addEventListener('click', () => document.getElementById('modal-relat-overlay').classList.remove('aberto'));
+});
+document.getElementById('modal-relat-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-relat-overlay')) document.getElementById('modal-relat-overlay').classList.remove('aberto');
+});
 
 document.getElementById('btn-nova-campanha').addEventListener('click', () => abrirModalCampanha());
 document.getElementById('btn-reload-camp').addEventListener('click', carregarCampanhas);

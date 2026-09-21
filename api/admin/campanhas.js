@@ -39,8 +39,17 @@ async function dispararEmail(campanha, destinatarios) {
       const html = (campanha.conteudo_html || '').replace('{{nome}}', d.nome || 'Prezado(a)')
         + `\n<p style="font-size:11px;color:#999;text-align:center;margin-top:24px">
             <a href="${linkDesc}" style="color:#999">Descadastrar-se desta lista</a></p>`;
+      // Pixel de abertura + rastreamento de cliques
+      const trackBase = `${BASE_URL}/api/inscrito?acao=track&c=${campanha.id}&e=${encodeURIComponent(d.email)}`;
+      let htmlFinal = html
+        .replace(/href="(https?:\/\/[^"]+)"/g, (match, url) => {
+          if (url.includes('acao=track') || url.includes('/api/descadastrar')) return match;
+          return `href="${trackBase}&t=click&url=${encodeURIComponent(url)}"`;
+        });
+      htmlFinal += `<img src="${trackBase}&t=open" width="1" height="1" style="display:none;border:0" alt="">`;
+
       try {
-        const result = await resend.emails.send({ from, to: d.email, subject: campanha.assunto, html });
+        const result = await resend.emails.send({ from, to: d.email, subject: campanha.assunto, html: htmlFinal });
         await supabase.from('disparos').update({
           status: 'enviado', provider_id: result.data?.id || null, enviado_em: new Date().toISOString(),
         }).eq('campanha_id', campanha.id).eq('destinatario', d.email);
@@ -321,6 +330,33 @@ module.exports = async (req, res) => {
       const { error } = await supabase.from('contatos_externos').delete().eq('id', id);
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao remover contato.' });
       return res.status(200).json({ success: true, mensagem: 'Contato removido.' });
+    }
+
+    /* --- Relatório de campanha --- */
+    if (body.action === 'get-relatorio') {
+      const { id, page = 1, limit = 100 } = body;
+      if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
+
+      const from = (page - 1) * limit;
+      const { data, error, count } = await supabase
+        .from('disparos')
+        .select('id, destinatario, nome, status, enviado_em, aberto_em, clicado_em, erro', { count: 'exact' })
+        .eq('campanha_id', id)
+        .order('enviado_em', { ascending: false, nullsFirst: false })
+        .range(from, from + limit - 1);
+
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao buscar relatório.' });
+
+      const todos = data || [];
+      const stats = {
+        total:    count || 0,
+        enviados: todos.filter(d => d.status === 'enviado').length,
+        falhas:   todos.filter(d => d.status === 'falhou').length,
+        pendentes:todos.filter(d => d.status === 'pendente').length,
+        abertos:  todos.filter(d => d.aberto_em).length,
+        clicados: todos.filter(d => d.clicado_em).length,
+      };
+      return res.status(200).json({ success: true, stats, disparos: todos, total: count || 0, page, limit });
     }
 
     /* --- Ler configurações --- */

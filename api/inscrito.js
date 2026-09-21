@@ -7,6 +7,28 @@ function cpfParcial(cpf) {
 }
 
 module.exports = async (req, res) => {
+
+  /* ── Pixel de rastreamento de abertura e clique ── */
+  if (req.query.acao === 'track') {
+    const { c: campId, e: email, t: tipo, url } = req.query;
+    if (campId && email && tipo) {
+      const campo = tipo === 'open' ? 'aberto_em' : 'clicado_em';
+      await supabase.from('disparos')
+        .update({ [campo]: new Date().toISOString() })
+        .eq('campanha_id', campId)
+        .eq('destinatario', decodeURIComponent(email))
+        .is(campo, null);
+    }
+    if (tipo === 'click' && url) {
+      res.setHeader('Location', decodeURIComponent(url));
+      return res.status(302).end();
+    }
+    const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.setHeader('Content-Type', 'image/gif');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    return res.status(200).send(gif);
+  }
+
   res.setHeader('Content-Type', 'application/json');
 
   const hash = (req.query.h || '').replace(/[^a-f0-9]/g, '');
