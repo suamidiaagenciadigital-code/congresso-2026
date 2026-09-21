@@ -547,5 +547,15 @@ module.exports = async (req, res) => {
     return res.status(200).json({ success: true, mensagem: 'Campanha atualizada.' });
   }
 
+  /* ── DELETE: excluir campanha ── */
+  if (req.method === 'DELETE') {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
+    await supabase.from('disparos').delete().eq('campanha_id', id);
+    const { error } = await supabase.from('campanhas').delete().eq('id', id);
+    if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao excluir: ' + error.message });
+    return res.status(200).json({ success: true, mensagem: 'Campanha excluída.' });
+  }
+
   return res.status(405).json({ success: false, mensagem: 'Método não permitido.' });
 };

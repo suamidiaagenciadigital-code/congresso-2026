@@ -1258,14 +1258,15 @@ async function carregarCampanhas() {
       const btnTestar  = `<button class="btn btn-testar"   data-cid="${c.id}" data-cac="testar">✉ Testar</button>`;
       const btnRelat   = `<button class="btn btn-relat"    data-cid="${c.id}" data-cac="relatorio">Relatório</button>`;
       const btnCanc    = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="cancelar">Cancelar</button>`;
+      const btnDel     = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="excluir" style="background:#7f1d1d">🗑</button>`;
 
       let acoes = '';
-      if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnRelat + btnAprovar + btnCanc;
-      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnRelat + btnAprovar + btnCanc;
-      if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnRelat + btnDisp    + btnCanc;
+      if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnRelat + btnAprovar + btnCanc  + btnDel;
+      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnRelat + btnAprovar + btnCanc  + btnDel;
+      if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnRelat + btnDisp    + btnCanc  + btnDel;
       if (c.status === 'enviando')             acoes = btnVer   + btnTestar + btnRelat;
-      if (c.status === 'concluido')            acoes = btnVer   + btnTestar + btnRelat;
-      if (c.status === 'cancelado')            acoes = btnVer   + btnTestar + btnRelat;
+      if (c.status === 'concluido')            acoes = btnVer   + btnTestar + btnRelat + btnDel;
+      if (c.status === 'cancelado')            acoes = btnVer   + btnTestar + btnRelat + btnDel;
 
       return `<tr>
         <td>${i + 1}</td>
@@ -1286,6 +1287,7 @@ async function carregarCampanhas() {
         else if (acao === 'aprovar')    aprovarCampanha(c.id, c.nome, c.status);
         else if (acao === 'disparar')   dispararCampanha(c.id, c.nome);
         else if (acao === 'cancelar')   cancelarCampanha(c.id, c.nome);
+        else if (acao === 'excluir')    excluirCampanha(c.id, c.nome);
         else if (acao === 'relatorio')  verRelatorio(c.id, c.nome);
         else if (acao === 'testar')     abrirModalTeste(c);
       });
@@ -1506,6 +1508,25 @@ async function dispararCampanha(id, nome) {
     if (json.success) setTimeout(() => { carregarCampanhas(); msgEl.textContent = ''; }, 3000);
     else setTimeout(() => { msgEl.textContent = ''; }, 8000);
   } catch { msgEl.textContent = 'Erro de conexão.'; }
+}
+
+async function excluirCampanha(id, nome) {
+  if (!confirm(`Excluir permanentemente a campanha "${nome}"?\n\nTodos os registros de disparo também serão apagados. Esta ação não pode ser desfeita.`)) return;
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'DELETE', headers: authHeaders(),
+      body: JSON.stringify({ id }),
+    });
+    const json = await resp.json();
+    const msgEl = document.getElementById('msg-camp');
+    if (json.success) {
+      msgEl.textContent = `Campanha "${nome}" excluída.`;
+      carregarCampanhas();
+    } else {
+      msgEl.textContent = 'Erro: ' + (json.mensagem || 'Tente novamente.');
+    }
+    setTimeout(() => { msgEl.textContent = ''; }, 4000);
+  } catch { alert('Erro de conexão.'); }
 }
 
 async function cancelarCampanha(id, nome) {
