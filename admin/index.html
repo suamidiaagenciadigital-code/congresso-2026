@@ -2093,10 +2093,12 @@ async function carregarConfiguracoes() {
     const j = await r.json();
     if (!j.success) return;
     const c = j.config;
-    document.getElementById('cfg-resend-key').placeholder    = c.resend_key    ? '(chave salva — deixe em branco para manter)' : 're_xxxxxxxxxxxx';
+    document.getElementById('cfg-resend-key').value           = c.resend_key    ? '••••••••' : '';
+    document.getElementById('cfg-resend-key').placeholder     = c.resend_key    ? '' : 're_xxxxxxxxxxxx';
     document.getElementById('cfg-resend-from').value          = c.resend_from             || '';
     document.getElementById('cfg-resend-from-mkt').value      = c.resend_from_marketing   || '';
-    document.getElementById('cfg-wa-token').placeholder       = c.whatsapp_token ? '(token salvo — deixe em branco para manter)' : 'EAAxxxxxxxxxx...';
+    document.getElementById('cfg-wa-token').value             = c.whatsapp_token ? '••••••••' : '';
+    document.getElementById('cfg-wa-token').placeholder       = c.whatsapp_token ? '' : 'EAAxxxxxxxxxx...';
     document.getElementById('cfg-wa-phone-id').value          = c.whatsapp_phone_id || '';
     document.getElementById('cfg-wa-waba-id').value           = c.whatsapp_waba_id  || '';
     document.getElementById('cfg-base-url').value             = c.base_url || '';
@@ -2106,11 +2108,11 @@ async function carregarConfiguracoes() {
 async function salvarConfiguracoes() {
   const config = {};
   const resendKey = document.getElementById('cfg-resend-key').value.trim();
-  if (resendKey) config.resend_key = resendKey;
+  if (resendKey && resendKey !== '••••••••') config.resend_key = resendKey;
   config.resend_from           = document.getElementById('cfg-resend-from').value.trim();
   config.resend_from_marketing = document.getElementById('cfg-resend-from-mkt').value.trim();
   const waToken = document.getElementById('cfg-wa-token').value.trim();
-  if (waToken) config.whatsapp_token = waToken;
+  if (waToken && waToken !== '••••••••') config.whatsapp_token = waToken;
   config.whatsapp_phone_id = document.getElementById('cfg-wa-phone-id').value.trim();
   config.whatsapp_waba_id  = document.getElementById('cfg-wa-waba-id').value.trim();
   config.base_url          = document.getElementById('cfg-base-url').value.trim();
