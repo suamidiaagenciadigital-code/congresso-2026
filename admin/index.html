@@ -1178,12 +1178,12 @@ async function carregarCampanhas() {
       const btnCanc    = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="cancelar">Cancelar</button>`;
 
       let acoes = '';
-      if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnAprovar + btnCanc;
-      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnAprovar + btnCanc;
-      if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnDisp    + btnCanc;
+      if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnRelat + btnAprovar + btnCanc;
+      if (c.status === 'aguardando_aprovacao') acoes = btnVer   + btnTestar + btnRelat + btnAprovar + btnCanc;
+      if (c.status === 'aprovado')             acoes = btnVer   + btnTestar + btnRelat + btnDisp    + btnCanc;
       if (c.status === 'enviando')             acoes = btnVer   + btnTestar + btnRelat;
       if (c.status === 'concluido')            acoes = btnVer   + btnTestar + btnRelat;
-      if (c.status === 'cancelado')            acoes = btnVer   + btnTestar;
+      if (c.status === 'cancelado')            acoes = btnVer   + btnTestar + btnRelat;
 
       return `<tr>
         <td>${i + 1}</td>
