@@ -115,7 +115,27 @@ async function dispararWhatsApp(campanha, destinatarios) {
         erro: ok ? null : JSON.stringify(json.error || json).slice(0, 200),
         enviado_em: new Date().toISOString(),
       }).eq('campanha_id', campanha.id).eq('destinatario', d.telefone);
-      if (ok) enviados++; else falhas++;
+      if (ok) {
+        enviados++;
+        // Registra a mensagem enviada no inbox de conversas
+        const conteudoInbox = texto || `[Campanha: ${campanha.nome}]`;
+        const { data: convData } = await supabase
+          .from('conversas')
+          .upsert(
+            { telefone: numero, nome: d.nome, ultima_mensagem: conteudoInbox, ultima_mensagem_em: new Date().toISOString() },
+            { onConflict: 'telefone' }
+          )
+          .select('id')
+          .single();
+        if (convData?.id) {
+          await supabase.from('mensagens').insert({
+            conversa_id: convData.id,
+            direcao: 'saida',
+            conteudo: conteudoInbox,
+            wamid: json.messages[0].id,
+          });
+        }
+      } else { falhas++; }
     } catch (e) {
       await supabase.from('disparos').update({ status: 'falhou', erro: e.message?.slice(0, 200) })
         .eq('campanha_id', campanha.id).eq('destinatario', d.telefone);
