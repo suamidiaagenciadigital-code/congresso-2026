@@ -457,7 +457,7 @@
         <h3 style="margin:0 0 4px;font-family:'Montserrat',sans-serif">Configurações do sistema</h3>
         <p style="margin:0;font-size:13px;color:#666">Credenciais salvas no banco de dados — sobrescrevem variáveis de ambiente do Vercel.</p>
       </div>
-      <button class="btn btn-principal" id="btn-salvar-api-config">Salvar configurações</button>
+      <button class="btn btn-principal" id="btn-salvar-api-config" onclick="salvarConfiguracoes()">Salvar configurações</button>
     </div>
     <div id="msg-config" style="margin-bottom:16px;font-size:13px"></div>
 
@@ -1907,7 +1907,7 @@ async function carregarConfiguracoes() {
   } catch(e) { console.error('Erro ao carregar config:', e); }
 }
 
-document.getElementById('btn-salvar-api-config').addEventListener('click', async () => {
+async function salvarConfiguracoes() {
   const config = {};
   const resendKey = document.getElementById('cfg-resend-key').value.trim();
   if (resendKey) config.resend_key = resendKey;
@@ -1934,7 +1934,8 @@ document.getElementById('btn-salvar-api-config').addEventListener('click', async
   } catch(e) {
     msgEl.innerHTML = '<span style="color:red">Erro de conexão.</span>';
   }
-});
+}
+document.getElementById('btn-salvar-api-config').addEventListener('click', salvarConfiguracoes);
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();
