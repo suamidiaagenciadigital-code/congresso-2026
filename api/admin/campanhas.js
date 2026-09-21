@@ -326,18 +326,27 @@ module.exports = async (req, res) => {
 
       if (!rows.length) return res.status(400).json({ success: false, mensagem: 'Nenhum contato válido.' });
 
-      // Upsert: pula duplicatas de e-mail em vez de lançar erro
-      const { data: inseridos, error } = await supabase
-        .from('contatos_externos')
-        .upsert(rows, { onConflict: 'email', ignoreDuplicates: true })
-        .select('id');
+      // Filtra e-mails já existentes para evitar duplicatas sem depender de constraint
+      const emailsCSV = rows.filter(r => r.email).map(r => r.email);
+      let jaExistentes = new Set();
+      if (emailsCSV.length) {
+        const { data: existentes } = await supabase
+          .from('contatos_externos').select('email').in('email', emailsCSV);
+        jaExistentes = new Set((existentes || []).map(r => r.email));
+      }
+      const rowsNovos = rows.filter(r => !r.email || !jaExistentes.has(r.email));
+      const ignorados = rows.length - rowsNovos.length;
+
+      if (!rowsNovos.length) {
+        return res.status(200).json({ success: true, mensagem: `0 importado(s). ${ignorados} já existia(m) e foram ignorado(s).`, total: 0 });
+      }
+
+      const { error } = await supabase.from('contatos_externos').insert(rowsNovos);
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao importar: ' + error.message });
-      const novos = (inseridos || []).length;
-      const ignorados = rows.length - novos;
       const msg = ignorados > 0
-        ? `${novos} importado(s). ${ignorados} já existia(m) e foram ignorado(s).`
-        : `${novos} contato(s) importados.`;
-      return res.status(200).json({ success: true, mensagem: msg, total: novos });
+        ? `${rowsNovos.length} importado(s). ${ignorados} já existia(m) e foram ignorado(s).`
+        : `${rowsNovos.length} contato(s) importados.`;
+      return res.status(200).json({ success: true, mensagem: msg, total: rowsNovos.length });
     }
 
     /* --- Listar contatos externos --- */
