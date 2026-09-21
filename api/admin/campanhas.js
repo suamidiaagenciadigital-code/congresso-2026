@@ -326,9 +326,18 @@ module.exports = async (req, res) => {
 
       if (!rows.length) return res.status(400).json({ success: false, mensagem: 'Nenhum contato válido.' });
 
-      const { error } = await supabase.from('contatos_externos').insert(rows);
+      // Upsert: pula duplicatas de e-mail em vez de lançar erro
+      const { data: inseridos, error } = await supabase
+        .from('contatos_externos')
+        .upsert(rows, { onConflict: 'email', ignoreDuplicates: true })
+        .select('id');
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao importar: ' + error.message });
-      return res.status(200).json({ success: true, mensagem: `${rows.length} contatos importados.`, total: rows.length });
+      const novos = (inseridos || []).length;
+      const ignorados = rows.length - novos;
+      const msg = ignorados > 0
+        ? `${novos} importado(s). ${ignorados} já existia(m) e foram ignorado(s).`
+        : `${novos} contato(s) importados.`;
+      return res.status(200).json({ success: true, mensagem: msg, total: novos });
     }
 
     /* --- Listar contatos externos --- */
