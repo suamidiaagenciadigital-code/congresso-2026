@@ -182,6 +182,32 @@
   .camp-form-group small { font-size: .74rem; color: #9CA3AF; }
   .camp-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 600px) { .camp-form-row { grid-template-columns: 1fr; } }
+
+  /* ── Inbox Conversas ── */
+  #inbox-wrap { display:flex; height:calc(100vh - 108px); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+  #inbox-lista { width:300px; min-width:260px; background:#fff; border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+  #lista-conversas { flex:1; overflow-y:auto; }
+  .conv-item { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #f3f4f6; cursor:pointer; transition:background .12s; }
+  .conv-item:hover, .conv-item.ativa { background:var(--red-light); }
+  .conv-avatar { width:40px; height:40px; border-radius:50%; background:#e3e8f0; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+  .conv-info { flex:1; min-width:0; }
+  .conv-nome { font-weight:600; font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .conv-ultima { font-size:.76rem; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  .conv-meta { flex-shrink:0; text-align:right; }
+  .conv-hora { font-size:.68rem; color:#aaa; }
+  .conv-badge { background:var(--red); color:#fff; border-radius:10px; font-size:.65rem; font-weight:700; padding:1px 6px; display:inline-block; margin-top:3px; }
+  #inbox-thread { flex:1; background:#ECE5DD; display:flex; flex-direction:column; min-width:0; }
+  #thread-header { background:#fff; padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  #thread-msgs { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:6px; }
+  .msg-bubble-wrap { display:flex; }
+  .msg-bubble-wrap.saida { justify-content:flex-end; }
+  .msg-bubble { max-width:72%; padding:8px 12px; border-radius:10px; font-size:.88rem; line-height:1.45; word-break:break-word; white-space:pre-wrap; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+  .msg-bubble.entrada { background:#fff; color:#111; border-radius:10px 10px 10px 2px; }
+  .msg-bubble.saida   { background:#DCF8C6; color:#111; border-radius:10px 10px 2px 10px; }
+  .msg-hora { font-size:.66rem; color:#888; text-align:right; margin-top:3px; }
+  #thread-reply { background:#fff; border-top:1px solid var(--border); padding:10px 14px; display:flex; gap:10px; align-items:flex-end; flex-shrink:0; }
+  #resposta-texto { flex:1; border:1.5px solid var(--border); border-radius:8px; padding:9px 12px; font-size:.88rem; font-family:'Open Sans',sans-serif; resize:none; height:56px; min-height:44px; max-height:120px; }
+  #resposta-texto:focus { outline:none; border-color:var(--red); }
 </style>
 </head>
 <body>
@@ -207,6 +233,11 @@
       <button class="tab" data-tab="campanhas">
         <span class="nav-icon">📣</span>
         <span class="nav-label">Campanhas</span>
+      </button>
+      <button class="tab" data-tab="conversas">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">Conversas</span>
+        <span id="inbox-badge-nav" style="display:none;background:var(--red);color:#fff;border-radius:10px;font-size:.65rem;font-weight:700;padding:1px 6px;margin-left:auto;line-height:1.6">0</span>
       </button>
       <button class="tab" data-tab="equipe">
         <span class="nav-icon">🔑</span>
@@ -515,6 +546,38 @@
     </div>
   </div><!-- /tab-config -->
 
+  <!-- ── ABA CONVERSAS ── -->
+  <div class="tab-content" id="tab-conversas">
+    <div id="inbox-wrap">
+      <!-- Lista -->
+      <div id="inbox-lista">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <strong style="font-family:'Montserrat',sans-serif;font-size:.88rem;color:var(--text)">Conversas</strong>
+          <button class="btn btn-limpar" id="btn-reload-conversas" style="padding:4px 10px;font-size:.78rem">↻</button>
+        </div>
+        <div id="lista-conversas"><div class="vazio" style="padding:32px">Carregando...</div></div>
+      </div>
+      <!-- Thread -->
+      <div id="inbox-thread">
+        <div id="thread-header">
+          <div style="font-size:1.4rem;flex-shrink:0">💬</div>
+          <div style="flex:1;min-width:0">
+            <div id="thread-nome" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Selecione uma conversa</div>
+            <div id="thread-tel" style="font-size:.76rem;color:var(--text-soft)"></div>
+          </div>
+          <div id="thread-janela-aviso" style="display:none;padding:4px 10px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:6px;font-size:.75rem;color:#854D0E;flex-shrink:0">⚠️ Janela 24h encerrada — use template</div>
+        </div>
+        <div id="thread-msgs">
+          <div class="vazio" style="margin:auto;color:#888">Selecione uma conversa para ver as mensagens</div>
+        </div>
+        <div id="thread-reply" style="display:none">
+          <textarea id="resposta-texto" placeholder="Digite sua resposta..."></textarea>
+          <button class="btn btn-principal" id="btn-enviar-resposta" style="height:56px;padding:0 18px">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-conversas -->
+
     </div><!-- /content -->
   </div><!-- /main-area -->
 </div><!-- /layout -->
@@ -754,10 +817,11 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('ativo'));
     tab.classList.add('ativo');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('ativo');
-    const titulos = { inscritos: 'Inscritos', certificado: 'Certificado', campanhas: 'Campanhas', equipe: 'Equipe', config: 'Configurações' };
+    const titulos = { inscritos: 'Inscritos', certificado: 'Certificado', campanhas: 'Campanhas', conversas: 'Conversas WhatsApp', equipe: 'Equipe', config: 'Configurações' };
     document.getElementById('topbar-title').textContent = titulos[tab.dataset.tab] || '';
     if (tab.dataset.tab === 'certificado') carregarConfig();
     if (tab.dataset.tab === 'campanhas')   carregarCampanhas();
+    if (tab.dataset.tab === 'conversas')   carregarConversas();
     if (tab.dataset.tab === 'equipe')      carregarAdmins();
     if (tab.dataset.tab === 'config')      carregarConfiguracoes();
   });
@@ -1961,6 +2025,165 @@ async function salvarConfiguracoes() {
   }
 }
 document.getElementById('btn-salvar-api-config').addEventListener('click', salvarConfiguracoes);
+
+// ─── Inbox Conversas ─────────────────────────────────────
+let conversaAtualId   = null;
+let conversaAtualTel  = null;
+let conversas         = [];
+let pollingInterval   = null;
+
+function fmtHoraMsg(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const hoje = new Date();
+  const mesmaData = d.toDateString() === hoje.toDateString();
+  if (mesmaData) return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+async function carregarConversas() {
+  const listEl = document.getElementById('lista-conversas');
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'listar-conversas' }),
+    });
+    const json = await resp.json();
+    if (!json.success) { listEl.innerHTML = '<div class="vazio" style="padding:32px">Erro ao carregar.</div>'; return; }
+
+    conversas = json.conversas || [];
+    const totalNaoLidas = conversas.reduce((s, c) => s + (c.nao_lidas || 0), 0);
+    const badgeNav = document.getElementById('inbox-badge-nav');
+    if (totalNaoLidas > 0) {
+      badgeNav.textContent = totalNaoLidas; badgeNav.style.display = '';
+    } else {
+      badgeNav.style.display = 'none';
+    }
+
+    if (!conversas.length) {
+      listEl.innerHTML = '<div class="vazio" style="padding:32px;text-align:center;color:#888">Nenhuma conversa ainda.<br><small>Configure o webhook para receber mensagens.</small></div>';
+      return;
+    }
+
+    listEl.innerHTML = conversas.map(c => `
+      <div class="conv-item${c.id === conversaAtualId ? ' ativa' : ''}" data-cid="${c.id}" data-tel="${esc(c.telefone)}" data-nome="${esc(c.nome||c.telefone)}">
+        <div class="conv-avatar">👤</div>
+        <div class="conv-info">
+          <div class="conv-nome">${esc(c.nome || c.telefone)}</div>
+          <div class="conv-ultima">${esc(c.ultima_mensagem || '')}</div>
+        </div>
+        <div class="conv-meta">
+          <div class="conv-hora">${fmtHoraMsg(c.ultima_mensagem_em)}</div>
+          ${c.nao_lidas > 0 ? `<span class="conv-badge">${c.nao_lidas}</span>` : ''}
+        </div>
+      </div>`).join('');
+
+    listEl.querySelectorAll('.conv-item').forEach(el => {
+      el.addEventListener('click', () => abrirConversa(el.dataset.cid, el.dataset.tel, el.dataset.nome));
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div class="vazio" style="padding:32px">Erro de conexão.</div>';
+  }
+}
+
+async function abrirConversa(id, tel, nome) {
+  conversaAtualId  = id;
+  conversaAtualTel = tel;
+
+  document.getElementById('thread-nome').textContent = nome || tel;
+  document.getElementById('thread-tel').textContent  = tel;
+  document.getElementById('thread-reply').style.display = '';
+  document.getElementById('resposta-texto').disabled = false;
+  document.getElementById('btn-enviar-resposta').disabled = false;
+  document.getElementById('thread-msgs').innerHTML = '<div class="vazio" style="margin:auto">⏳ Carregando...</div>';
+  document.getElementById('thread-janela-aviso').style.display = 'none';
+
+  // marca como ativa na lista
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.toggle('ativa', el.dataset.cid === id));
+
+  await carregarMensagens(id);
+  atualizarBadgeConversas(id);
+}
+
+function atualizarBadgeConversas(idLido) {
+  const conv = conversas.find(c => c.id === idLido);
+  if (conv) conv.nao_lidas = 0;
+  const total = conversas.reduce((s, c) => s + (c.nao_lidas || 0), 0);
+  const badge = document.getElementById('inbox-badge-nav');
+  if (total > 0) { badge.textContent = total; badge.style.display = ''; }
+  else badge.style.display = 'none';
+  // Atualiza badge individual na lista
+  const item = document.querySelector(`.conv-item[data-cid="${idLido}"] .conv-badge`);
+  if (item) item.remove();
+}
+
+async function carregarMensagens(id) {
+  const msgsEl = document.getElementById('thread-msgs');
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'get-mensagens', conversa_id: id }),
+    });
+    const json = await resp.json();
+    if (!json.success) { msgsEl.innerHTML = '<div class="vazio" style="margin:auto">Erro ao carregar mensagens.</div>'; return; }
+
+    const msgs = json.mensagens || [];
+    if (!msgs.length) {
+      msgsEl.innerHTML = '<div class="vazio" style="margin:auto">Nenhuma mensagem ainda.</div>';
+    } else {
+      msgsEl.innerHTML = msgs.map(m => `
+        <div class="msg-bubble-wrap ${m.direcao}">
+          <div class="msg-bubble ${m.direcao}">
+            ${esc(m.conteudo || '')}
+            <div class="msg-hora">${fmtHoraMsg(m.criado_em)}</div>
+          </div>
+        </div>`).join('');
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+
+      // Verifica janela de 24h
+      const entradas = msgs.filter(m => m.direcao === 'entrada');
+      if (entradas.length) {
+        const ultima = new Date(entradas[entradas.length - 1].criado_em);
+        const diff   = Date.now() - ultima.getTime();
+        document.getElementById('thread-janela-aviso').style.display = diff > 86400000 ? '' : 'none';
+      }
+    }
+  } catch {
+    msgsEl.innerHTML = '<div class="vazio" style="margin:auto">Erro de conexão.</div>';
+  }
+}
+
+document.getElementById('btn-reload-conversas').addEventListener('click', carregarConversas);
+
+document.getElementById('btn-enviar-resposta').addEventListener('click', async () => {
+  if (!conversaAtualId) return;
+  const texto = document.getElementById('resposta-texto').value.trim();
+  if (!texto) return;
+  const btn   = document.getElementById('btn-enviar-resposta');
+  const txtEl = document.getElementById('resposta-texto');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const resp = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'responder', conversa_id: conversaAtualId, texto }),
+    });
+    const json = await resp.json();
+    if (json.success) {
+      txtEl.value = '';
+      await carregarMensagens(conversaAtualId);
+    } else {
+      alert('Erro ao enviar: ' + json.mensagem);
+    }
+  } catch { alert('Erro de conexão.'); }
+  btn.disabled = false; btn.textContent = 'Enviar';
+});
+
+document.getElementById('resposta-texto').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('btn-enviar-resposta').click();
+  }
+});
 
 // ─── Inicializar ──────────────────────────────────────────
 carregarDados();

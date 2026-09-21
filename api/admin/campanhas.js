@@ -416,6 +416,65 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, mensagem: 'Configurações salvas.' });
     }
 
+    /* --- Listar conversas WhatsApp --- */
+    if (body.action === 'listar-conversas') {
+      const { data, error } = await supabase
+        .from('conversas')
+        .select('id, telefone, nome, ultima_mensagem, ultima_mensagem_em, nao_lidas, criado_em')
+        .order('ultima_mensagem_em', { ascending: false, nullsFirst: false });
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao listar conversas.' });
+      return res.status(200).json({ success: true, conversas: data || [] });
+    }
+
+    /* --- Mensagens de uma conversa --- */
+    if (body.action === 'get-mensagens') {
+      const { conversa_id } = body;
+      if (!conversa_id) return res.status(400).json({ success: false, mensagem: 'conversa_id obrigatório.' });
+      const { data, error } = await supabase
+        .from('mensagens')
+        .select('id, direcao, conteudo, wamid, criado_em')
+        .eq('conversa_id', conversa_id)
+        .order('criado_em', { ascending: true });
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao buscar mensagens.' });
+      await supabase.from('conversas').update({ nao_lidas: 0 }).eq('id', conversa_id);
+      return res.status(200).json({ success: true, mensagens: data || [] });
+    }
+
+    /* --- Responder conversa WhatsApp --- */
+    if (body.action === 'responder') {
+      const { conversa_id, texto } = body;
+      if (!conversa_id || !texto?.trim())
+        return res.status(400).json({ success: false, mensagem: 'conversa_id e texto obrigatórios.' });
+      const { data: conv } = await supabase.from('conversas').select('telefone').eq('id', conversa_id).single();
+      if (!conv) return res.status(404).json({ success: false, mensagem: 'Conversa não encontrada.' });
+      const cfg = await getConfigs('whatsapp_token', 'whatsapp_phone_id');
+      const waToken = cfg.whatsapp_token || process.env.WHATSAPP_TOKEN;
+      const phoneId = cfg.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID;
+      if (!waToken || !phoneId)
+        return res.status(503).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas.' });
+      const tel = conv.telefone.replace(/\D/g, '');
+      const numero = tel.startsWith('55') ? tel : '55' + tel;
+      try {
+        const resp = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messaging_product: 'whatsapp', to: numero, type: 'text', text: { body: texto.trim() } }),
+        });
+        const json = await resp.json();
+        const ok = !json.error && json.messages?.[0]?.id;
+        if (!ok) return res.status(500).json({ success: false, mensagem: 'Erro Meta API: ' + JSON.stringify(json.error || json).slice(0, 200) });
+        await supabase.from('mensagens').insert({
+          conversa_id, direcao: 'saida', conteudo: texto.trim(), wamid: json.messages[0].id,
+        });
+        await supabase.from('conversas').update({
+          ultima_mensagem: texto.trim(), ultima_mensagem_em: new Date().toISOString(),
+        }).eq('id', conversa_id);
+        return res.status(200).json({ success: true, mensagem: 'Mensagem enviada.' });
+      } catch (e) {
+        return res.status(500).json({ success: false, mensagem: 'Erro ao enviar: ' + e.message });
+      }
+    }
+
     /* --- Criar campanha --- */
     const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo, template_name, template_language } = body;
     if (!nome || !tipo || !publico)
