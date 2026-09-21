@@ -309,15 +309,17 @@ module.exports = async (req, res) => {
 
     /* --- Importar contatos externos (CSV) --- */
     if (body.action === 'importar-contatos') {
-      const { contatos } = body;
+      const { contatos, lista } = body;
       if (!Array.isArray(contatos) || !contatos.length)
         return res.status(400).json({ success: false, mensagem: 'Lista de contatos obrigatória.' });
 
+      const listaNome = (lista || '').trim() || null;
       const rows = contatos
         .map(c => ({
           nome: (c.nome || '').trim(),
           email: (c.email || '').trim().toLowerCase() || null,
           telefone: (c.telefone || '').trim() || null,
+          lista: listaNome,
           ativo: true,
         }))
         .filter(c => c.nome);
@@ -334,13 +336,31 @@ module.exports = async (req, res) => {
       const page  = parseInt(body.page  || 1);
       const limit = parseInt(body.limit || 50);
       const from  = (page - 1) * limit;
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('contatos_externos')
-        .select('id, nome, email, telefone, ativo, criado_em', { count: 'exact' })
+        .select('id, nome, email, telefone, lista, ativo, criado_em', { count: 'exact' })
         .order('criado_em', { ascending: false })
         .range(from, from + limit - 1);
+      if (body.lista) query = query.eq('lista', body.lista);
+      const { data, error, count } = await query;
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao listar contatos.' });
       return res.status(200).json({ success: true, contatos: data || [], total: count || 0, page, limit });
+    }
+
+    /* --- Listar nomes de listas --- */
+    if (body.action === 'listar-listas') {
+      const { data } = await supabase.from('contatos_externos').select('lista').not('lista', 'is', null);
+      const listas = [...new Set((data || []).map(r => r.lista).filter(Boolean))].sort();
+      return res.status(200).json({ success: true, listas });
+    }
+
+    /* --- Excluir todos os contatos de uma lista --- */
+    if (body.action === 'excluir-lista') {
+      const { lista } = body;
+      if (!lista) return res.status(400).json({ success: false, mensagem: 'Nome da lista obrigatório.' });
+      const { error } = await supabase.from('contatos_externos').delete().eq('lista', lista);
+      if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao excluir lista: ' + error.message });
+      return res.status(200).json({ success: true, mensagem: `Lista "${lista}" excluída.` });
     }
 
     /* --- Remover contato externo --- */
