@@ -457,7 +457,7 @@ module.exports = async (req, res) => {
     if (fetchErr || !atual) return res.status(404).json({ success: false, mensagem: 'Campanha não encontrada.' });
 
     const campos = {};
-    if (status) {
+    if (status && status !== atual.status) {
       const validas = {
         rascunho: ['aprovado', 'cancelado'],
         aguardando_aprovacao: ['aprovado', 'rascunho', 'cancelado'],
