@@ -593,6 +593,24 @@
         <textarea id="camp-conteudo" placeholder="Cole aqui o HTML do e-mail..."></textarea>
         <small id="dica-conteudo">Use {{nome}} para personalizar com o nome do destinatário.</small>
       </div>
+      <!-- Template WhatsApp -->
+      <div class="camp-form-group" id="row-template" style="display:none">
+        <label>Template aprovado <span style="font-weight:400;color:#888">(opcional — necessário para campanhas em massa)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:start">
+          <div>
+            <input type="text" id="camp-template-name" placeholder="Ex: congresso_2026" maxlength="100">
+            <small>Nome do template aprovado no Gerenciador do WhatsApp Business. Deixe em branco para texto livre (só funciona se o contato enviou mensagem nas últimas 24h).</small>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#666;display:block;margin-bottom:4px">Idioma</label>
+            <select id="camp-template-lang" style="width:100%">
+              <option value="pt_BR">pt_BR</option>
+              <option value="en_US">en_US</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Mídia WhatsApp (imagem ou vídeo) -->
       <div class="camp-form-group" id="row-midia" style="display:none">
         <label>Mídia (imagem ou vídeo)</label>
@@ -1228,8 +1246,10 @@ function abrirModalCampanha(camp = null) {
   document.getElementById('camp-agendado').value = camp?.agendado_para ? camp.agendado_para.slice(0, 16) : '';
 
   // Mídia
-  document.getElementById('camp-midia-url').value  = camp?.midia_url  || '';
-  document.getElementById('camp-midia-tipo').value = camp?.midia_tipo || '';
+  document.getElementById('camp-midia-url').value      = camp?.midia_url       || '';
+  document.getElementById('camp-midia-tipo').value     = camp?.midia_tipo      || '';
+  document.getElementById('camp-template-name').value  = camp?.template_name   || '';
+  document.getElementById('camp-template-lang').value  = camp?.template_language || 'pt_BR';
   document.getElementById('camp-midia-file').value = '';
   midiaArquivoPendente = null;
   if (camp?.midia_url) {
@@ -1238,7 +1258,7 @@ function abrirModalCampanha(camp = null) {
     limparPreviewMidia();
   }
 
-  ['camp-nome','camp-tipo','camp-publico','camp-assunto','camp-conteudo','camp-agendado'].forEach(id => {
+  ['camp-nome','camp-tipo','camp-publico','camp-assunto','camp-conteudo','camp-agendado','camp-template-name','camp-template-lang'].forEach(id => {
     document.getElementById(id).disabled = readonly;
   });
   document.getElementById('camp-midia-file').disabled = readonly;
@@ -1252,8 +1272,9 @@ function abrirModalCampanha(camp = null) {
 
 function atualizarCampTipo() {
   const tipo = document.getElementById('camp-tipo').value;
-  document.getElementById('row-assunto').style.display = tipo === 'email' ? '' : 'none';
-  document.getElementById('row-midia').style.display   = tipo === 'whatsapp' ? '' : 'none';
+  document.getElementById('row-assunto').style.display  = tipo === 'email'     ? '' : 'none';
+  document.getElementById('row-midia').style.display    = tipo === 'whatsapp' ? '' : 'none';
+  document.getElementById('row-template').style.display = tipo === 'whatsapp' ? '' : 'none';
   const lbl = document.getElementById('lbl-conteudo');
   const dica = document.getElementById('dica-conteudo');
   const ta = document.getElementById('camp-conteudo');
@@ -1273,15 +1294,17 @@ function atualizarCampTipo() {
 }
 
 async function salvarCampanha(statusDestino) {
-  const nome     = document.getElementById('camp-nome').value.trim();
-  const tipo     = document.getElementById('camp-tipo').value;
-  const publico  = document.getElementById('camp-publico').value;
-  const assunto  = document.getElementById('camp-assunto').value.trim();
-  const conteudo = document.getElementById('camp-conteudo').value.trim();
-  const agendado = document.getElementById('camp-agendado').value;
+  const nome         = document.getElementById('camp-nome').value.trim();
+  const tipo         = document.getElementById('camp-tipo').value;
+  const publico      = document.getElementById('camp-publico').value;
+  const assunto      = document.getElementById('camp-assunto').value.trim();
+  const conteudo     = document.getElementById('camp-conteudo').value.trim();
+  const agendado     = document.getElementById('camp-agendado').value;
+  const templateName = tipo === 'whatsapp' ? document.getElementById('camp-template-name').value.trim() : '';
+  const templateLang = tipo === 'whatsapp' ? document.getElementById('camp-template-lang').value : 'pt_BR';
 
-  if (!nome)    return alert('Informe o nome da campanha.');
-  if (!conteudo) return alert('Informe o conteúdo da campanha.');
+  if (!nome) return alert('Informe o nome da campanha.');
+  if (!conteudo && !(tipo === 'whatsapp' && templateName)) return alert('Informe o conteúdo da campanha.');
   if (tipo === 'email' && !assunto) return alert('Informe o assunto do e-mail.');
 
   const btnId = statusDestino === 'rascunho' ? 'btn-camp-rascunho' : 'btn-camp-aprovar-direto';
@@ -1321,11 +1344,13 @@ async function salvarCampanha(statusDestino) {
       id: campIdAtual,
       nome, tipo, publico,
       assunto: assunto || null,
-      conteudo_html: tipo === 'email'    ? conteudo : null,
-      conteudo_text: tipo === 'whatsapp' ? conteudo : null,
-      agendado_para: agendado || null,
-      midia_url:  midiaUrl,
-      midia_tipo: midiaTipo,
+      conteudo_html:     tipo === 'email'    ? conteudo : null,
+      conteudo_text:     tipo === 'whatsapp' ? conteudo : null,
+      agendado_para:     agendado || null,
+      midia_url:         midiaUrl,
+      midia_tipo:        midiaTipo,
+      template_name:     tipo === 'whatsapp' ? (templateName || null) : null,
+      template_language: tipo === 'whatsapp' ? (templateLang || 'pt_BR') : null,
       status: statusDestino,
     };
 

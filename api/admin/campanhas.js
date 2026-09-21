@@ -83,7 +83,17 @@ async function dispararWhatsApp(campanha, destinatarios) {
     const texto  = (campanha.conteudo_text || '').replace('{{nome}}', d.nome || 'Prezado(a)');
 
     let body;
-    if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
+    if (campanha.template_name) {
+      const components = texto ? [{ type: 'body', parameters: [{ type: 'text', text: texto }] }] : [];
+      body = {
+        messaging_product: 'whatsapp', to: numero, type: 'template',
+        template: {
+          name: campanha.template_name,
+          language: { code: campanha.template_language || 'pt_BR' },
+          ...(components.length ? { components } : {}),
+        },
+      };
+    } else if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
       body = { messaging_product: 'whatsapp', to: numero, type: 'image', image: { link: campanha.midia_url, caption: texto } };
     } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
       body = { messaging_product: 'whatsapp', to: numero, type: 'video', video: { link: campanha.midia_url, caption: texto } };
@@ -262,7 +272,17 @@ module.exports = async (req, res) => {
         const numero = tel.startsWith('55') ? tel : '55' + tel;
         const texto = (campanha.conteudo_text || '').replace('{{nome}}', 'Teste');
         let body;
-        if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
+        if (campanha.template_name) {
+          const components = texto ? [{ type: 'body', parameters: [{ type: 'text', text: texto }] }] : [];
+          body = {
+            messaging_product: 'whatsapp', to: numero, type: 'template',
+            template: {
+              name: campanha.template_name,
+              language: { code: campanha.template_language || 'pt_BR' },
+              ...(components.length ? { components } : {}),
+            },
+          };
+        } else if (campanha.midia_url && campanha.midia_tipo === 'imagem') {
           body = { messaging_product: 'whatsapp', to: numero, type: 'image', image: { link: campanha.midia_url, caption: texto } };
         } else if (campanha.midia_url && campanha.midia_tipo === 'video') {
           body = { messaging_product: 'whatsapp', to: numero, type: 'video', video: { link: campanha.midia_url, caption: texto } };
@@ -397,7 +417,7 @@ module.exports = async (req, res) => {
     }
 
     /* --- Criar campanha --- */
-    const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo } = body;
+    const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo, template_name, template_language } = body;
     if (!nome || !tipo || !publico)
       return res.status(400).json({ success: false, mensagem: 'Campos obrigatórios: nome, tipo, publico.' });
     if (!['email', 'whatsapp'].includes(tipo))
@@ -413,11 +433,13 @@ module.exports = async (req, res) => {
     const { data, error } = await supabase.from('campanhas').insert({
       nome: nome.trim(), tipo, publico,
       assunto: assunto?.trim() || null,
-      conteudo_html: conteudo_html || null,
-      conteudo_text: conteudo_text || null,
-      agendado_para: agendado_para || null,
-      midia_url: midia_url || null,
-      midia_tipo: midia_tipo || null,
+      conteudo_html:     conteudo_html     || null,
+      conteudo_text:     conteudo_text     || null,
+      agendado_para:     agendado_para     || null,
+      midia_url:         midia_url         || null,
+      midia_tipo:        midia_tipo        || null,
+      template_name:     template_name     || null,
+      template_language: template_language || null,
       status: statusFinal, ...extra,
     }).select('id').single();
 
@@ -427,7 +449,7 @@ module.exports = async (req, res) => {
 
   /* ── PATCH: atualizar campanha ── */
   if (req.method === 'PATCH') {
-    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico, midia_url, midia_tipo } = req.body || {};
+    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico, midia_url, midia_tipo, template_name, template_language } = req.body || {};
     if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
 
     const { data: atual, error: fetchErr } = await supabase
@@ -453,8 +475,10 @@ module.exports = async (req, res) => {
       if (conteudo_text !== undefined) campos.conteudo_text = conteudo_text;
       if (agendado_para !== undefined) campos.agendado_para = agendado_para || null;
       if (publico)                     campos.publico       = publico;
-      if (midia_url  !== undefined)    campos.midia_url     = midia_url  || null;
-      if (midia_tipo !== undefined)    campos.midia_tipo    = midia_tipo || null;
+      if (midia_url        !== undefined) campos.midia_url      = midia_url       || null;
+      if (midia_tipo       !== undefined) campos.midia_tipo     = midia_tipo      || null;
+      if (template_name    !== undefined) campos.template_name  = template_name   || null;
+      if (template_language!== undefined) campos.template_language = template_language || null;
     }
     if (!Object.keys(campos).length)
       return res.status(400).json({ success: false, mensagem: 'Nenhum campo para atualizar.' });
