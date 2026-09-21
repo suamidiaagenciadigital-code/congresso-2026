@@ -1258,7 +1258,7 @@ async function carregarCampanhas() {
       const btnTestar  = `<button class="btn btn-testar"   data-cid="${c.id}" data-cac="testar">✉ Testar</button>`;
       const btnRelat   = `<button class="btn btn-relat"    data-cid="${c.id}" data-cac="relatorio">Relatório</button>`;
       const btnCanc    = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="cancelar">Cancelar</button>`;
-      const btnDel     = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="excluir" style="background:#7f1d1d">🗑</button>`;
+      const btnDel     = `<button class="btn btn-excluir"  data-cid="${c.id}" data-cac="excluir" style="background:#7f1d1d;padding:5px 10px">✕</button>`;
 
       let acoes = '';
       if (c.status === 'rascunho')             acoes = btnEdit  + btnTestar + btnRelat + btnAprovar + btnCanc  + btnDel;
