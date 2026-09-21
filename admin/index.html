@@ -490,7 +490,7 @@
       </div>
       <button class="btn btn-principal" id="btn-salvar-api-config" onclick="salvarConfiguracoes()">Salvar configurações</button>
     </div>
-    <div id="msg-config" style="margin-bottom:16px;font-size:13px"></div>
+    <div id="msg-api-config" style="margin-bottom:16px;font-size:13px"></div>
 
     <!-- E-mail -->
     <div class="card" style="margin-bottom:20px">
@@ -2008,7 +2008,7 @@ async function salvarConfiguracoes() {
   config.whatsapp_waba_id  = document.getElementById('cfg-wa-waba-id').value.trim();
   config.base_url          = document.getElementById('cfg-base-url').value.trim();
 
-  const msgEl = document.getElementById('msg-config');
+  const msgEl = document.getElementById('msg-api-config');
   msgEl.innerHTML = '<span style="color:#666">Salvando...</span>';
   try {
     const r = await fetch('/api/admin/campanhas', {
