@@ -450,16 +450,31 @@ module.exports = async (req, res) => {
 
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao buscar relatório.' });
 
-      const todos = data || [];
+      const { count: pendentesCount } = await supabase
+        .from('disparos').select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).eq('status', 'pendente');
+      const { count: enviadosCount } = await supabase
+        .from('disparos').select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).eq('status', 'enviado');
+      const { count: falhasCount } = await supabase
+        .from('disparos').select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).eq('status', 'falhou');
+      const { count: abertosCount } = await supabase
+        .from('disparos').select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).not('aberto_em', 'is', null);
+      const { count: clicadosCount } = await supabase
+        .from('disparos').select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).not('clicado_em', 'is', null);
+
       const stats = {
-        total:    count || 0,
-        enviados: todos.filter(d => d.status === 'enviado').length,
-        falhas:   todos.filter(d => d.status === 'falhou').length,
-        pendentes:todos.filter(d => d.status === 'pendente').length,
-        abertos:  todos.filter(d => d.aberto_em).length,
-        clicados: todos.filter(d => d.clicado_em).length,
+        total:     count || 0,
+        enviados:  enviadosCount || 0,
+        falhas:    falhasCount || 0,
+        pendentes: pendentesCount || 0,
+        abertos:   abertosCount || 0,
+        clicados:  clicadosCount || 0,
       };
-      return res.status(200).json({ success: true, stats, disparos: todos, total: count || 0, page, limit });
+      return res.status(200).json({ success: true, stats, disparos: data || [], total: count || 0, page, limit });
     }
 
     /* --- Reenviar pendentes de uma campanha --- */
