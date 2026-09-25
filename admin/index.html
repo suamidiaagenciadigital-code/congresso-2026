@@ -778,6 +778,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn" id="btn-reenviar-pendentes" style="background:#065F46;color:#fff;display:none" onclick="reenviarPendentes()">⚡ Reenviar pendentes</button>
       <button class="btn" id="modal-relat-fechar2" style="background:var(--border);color:var(--text)">Fechar</button>
     </div>
   </div>
@@ -1266,6 +1267,7 @@ async function carregarCampanhas() {
     document.getElementById('cnt-camp-pendentes').textContent = (s.aguardando_aprovacao || 0) + (s.aprovado || 0);
     document.getElementById('cnt-camp-concluido').textContent = s.concluido || 0;
 
+    window._campanhasCache = json.campanhas;
     if (!json.campanhas.length) {
       tbody.innerHTML = '<tr><td colspan="8" class="vazio">Nenhuma campanha criada ainda. Clique em "+ Nova Campanha".</td></tr>';
       return;
@@ -1655,6 +1657,8 @@ async function verRelatorio(id, nome) {
           <div style="font-size:11px;color:#555">Pendentes</div>
         </div>` : ''}
       </div>`;
+    document.getElementById('btn-reenviar-pendentes').style.display = s.pendentes > 0 ? '' : 'none';
+    document.getElementById('btn-reenviar-pendentes').dataset.campId = id;
 
     const statusBadge = (d) => {
       const cores = { enviado: '#2e7d32', falhou: '#c62828', pendente: '#e65100' };
@@ -1677,6 +1681,27 @@ async function verRelatorio(id, nome) {
 function fecharModalCampanha() {
   document.getElementById('modal-camp-overlay').classList.remove('aberto');
   campIdAtual = null;
+}
+
+async function reenviarPendentes() {
+  const btn = document.getElementById('btn-reenviar-pendentes');
+  const id = btn.dataset.campId;
+  if (!id) return;
+  if (!confirm('Confirma o reenvio dos e-mails pendentes?')) return;
+  btn.disabled = true; btn.textContent = '⏳ Reenviando...';
+  try {
+    const r = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'reenviar-pendentes', id }),
+    });
+    const j = await r.json();
+    alert(j.mensagem || (j.success ? 'Reenvio concluído.' : 'Erro ao reenviar.'));
+    if (j.success) {
+      const c = (window._campanhasCache || []).find(x => x.id === id);
+      verRelatorio(id, c?.nome || '');
+    }
+  } catch { alert('Erro de conexão.'); }
+  finally { btn.disabled = false; btn.textContent = '⚡ Reenviar pendentes'; }
 }
 
 ['modal-relat-fechar','modal-relat-fechar2'].forEach(id => {

@@ -31,7 +31,7 @@ async function dispararEmail(campanha, destinatarios) {
   const BASE_URL = process.env.BASE_URL || 'https://congressopestalozzi.vercel.app';
 
   let enviados = 0, falhas = 0;
-  const LOTE = 50;
+  const LOTE = 10;
 
   for (let i = 0; i < destinatarios.length; i += LOTE) {
     const lote = destinatarios.slice(i, i + LOTE);
@@ -65,7 +65,7 @@ async function dispararEmail(campanha, destinatarios) {
         falhas++;
       }
     }));
-    if (i + LOTE < destinatarios.length) await new Promise(r => setTimeout(r, 300));
+    if (i + LOTE < destinatarios.length) await new Promise(r => setTimeout(r, 100));
   }
   return { enviados, falhas };
 }
@@ -460,6 +460,35 @@ module.exports = async (req, res) => {
         clicados: todos.filter(d => d.clicado_em).length,
       };
       return res.status(200).json({ success: true, stats, disparos: todos, total: count || 0, page, limit });
+    }
+
+    /* --- Reenviar pendentes de uma campanha --- */
+    if (body.action === 'reenviar-pendentes') {
+      const { id } = body;
+      if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
+
+      const { data: campanha } = await supabase.from('campanhas').select('*').eq('id', id).single();
+      if (!campanha) return res.status(404).json({ success: false, mensagem: 'Campanha não encontrada.' });
+
+      const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+      const { data: pendentes } = await supabase
+        .from('disparos').select(`nome, destinatario`)
+        .eq('campanha_id', id).eq('status', 'pendente');
+
+      if (!pendentes?.length)
+        return res.status(200).json({ success: true, mensagem: 'Nenhum pendente encontrado.', total: 0 });
+
+      const destinatarios = pendentes.map(d => ({ nome: d.nome, [campo]: d.destinatario }));
+
+      const resultado = campanha.tipo === 'email'
+        ? await dispararEmail(campanha, destinatarios)
+        : await dispararWhatsApp(campanha, destinatarios);
+
+      return res.status(200).json({
+        success: true,
+        mensagem: `Reenvio concluído: ${resultado.enviados} enviados, ${resultado.falhas} falhas.`,
+        total: destinatarios.length, enviados: resultado.enviados, falhas: resultado.falhas,
+      });
     }
 
     /* --- Ler configurações --- */
