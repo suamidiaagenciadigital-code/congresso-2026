@@ -13,6 +13,7 @@ async function getConfigs(...chaves) {
 
 function autenticar(req) {
   try {
+    if (req.headers['x-vercel-cron'] === '1') return true;
     const token = (req.headers.authorization || '').replace('Bearer ', '');
     jwt.verify(token, process.env.JWT_SECRET);
     return true;
@@ -35,15 +36,19 @@ async function dispararEmail(campanha, destinatarios) {
   for (let i = 0; i < destinatarios.length; i += LOTE) {
     const lote = destinatarios.slice(i, i + LOTE);
     await Promise.all(lote.map(async (d) => {
-      const linkDesc = `${BASE_URL}/api/descadastrar?email=${encodeURIComponent(d.email)}&camp=${campanha.id}`;
-      const html = (campanha.conteudo_html || '').replace('{{nome}}', d.nome || 'Prezado(a)')
-        + `\n<p style="font-size:11px;color:#999;text-align:center;margin-top:24px">
-            <a href="${linkDesc}" style="color:#999">Descadastrar-se desta lista</a></p>`;
+      const linkDesc = `${BASE_URL}/api/inscrito?acao=descadastrar&email=${encodeURIComponent(d.email)}&camp=${campanha.id}`;
+      const htmlBase = (campanha.conteudo_html || '')
+        .replace('{{nome}}', d.nome || 'Prezado(a)')
+        .replace('{{link_descadastro}}', linkDesc);
+      const temLinkNoHTML = htmlBase.includes(linkDesc);
+      const html = htmlBase + (temLinkNoHTML ? '' :
+        `\n<p style="font-size:11px;color:#999;text-align:center;margin-top:24px">
+            <a href="${linkDesc}" style="color:#999">Descadastrar-se desta lista</a></p>`);
       // Pixel de abertura + rastreamento de cliques
       const trackBase = `${BASE_URL}/api/inscrito?acao=track&c=${campanha.id}&e=${encodeURIComponent(d.email)}`;
       let htmlFinal = html
         .replace(/href="(https?:\/\/[^"]+)"/g, (match, url) => {
-          if (url.includes('acao=track') || url.includes('/api/descadastrar')) return match;
+          if (url.includes('acao=track') || url.includes('acao=descadastrar')) return match;
           return `href="${trackBase}&t=click&url=${encodeURIComponent(url)}"`;
         });
       htmlFinal += `<img src="${trackBase}&t=open" width="1" height="1" style="display:none;border:0" alt="">`;
@@ -146,15 +151,84 @@ async function dispararWhatsApp(campanha, destinatarios) {
   return { enviados, falhas };
 }
 
+/* ── Dispara uma campanha pelo ID (usado pelo disparar manual e pelo cron) ── */
+async function dispararCampanha(id) {
+  const { data: campanha, error: campErr } = await supabase
+    .from('campanhas').select('*').eq('id', id).single();
+  if (campErr || !campanha) return { success: false, mensagem: 'Campanha não encontrada.' };
+  if (campanha.status !== 'aprovado') return { success: false, mensagem: 'Apenas campanhas aprovadas podem ser disparadas.' };
+
+  const cfgDisp = await getConfigs('resend_key', 'whatsapp_token', 'whatsapp_phone_id');
+  if (campanha.tipo === 'email' && !(cfgDisp.resend_key || process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY))
+    return { success: false, mensagem: 'Chave Resend não configurada.' };
+  if (campanha.tipo === 'whatsapp' && (!(cfgDisp.whatsapp_token || process.env.WHATSAPP_TOKEN) || !(cfgDisp.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID)))
+    return { success: false, mensagem: 'Credenciais WhatsApp não configuradas.' };
+
+  let destinatarios = [];
+  if (campanha.publico === 'inscritos') {
+    const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+    const { data } = await supabase.from('inscritos')
+      .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null);
+    destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
+  } else {
+    const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+    const listaNome = campanha.lista_externa || null;
+    let extQ = supabase.from('contatos_externos')
+      .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null);
+    if (listaNome) extQ = extQ.eq('lista', listaNome);
+    const { data } = await extQ;
+    if (campanha.tipo === 'email') {
+      const { data: desc } = await supabase.from('descadastros').select('email');
+      const descSet = new Set((desc || []).map(d => d.email.toLowerCase()));
+      destinatarios = (data || []).filter(r => !descSet.has(r.email.toLowerCase()))
+        .map(r => ({ nome: r.nome, email: r.email }));
+    } else {
+      destinatarios = (data || []).map(r => ({ nome: r.nome, telefone: r.telefone }));
+    }
+  }
+
+  if (!destinatarios.length) return { success: false, mensagem: 'Nenhum destinatário encontrado.' };
+
+  await supabase.from('disparos').insert(destinatarios.map(d => ({
+    campanha_id: campanha.id,
+    destinatario: campanha.tipo === 'email' ? d.email : d.telefone,
+    nome: d.nome, status: 'pendente',
+  })));
+
+  await supabase.from('campanhas').update({ status: 'enviando', iniciado_em: new Date().toISOString() }).eq('id', id);
+
+  const resultado = campanha.tipo === 'email'
+    ? await dispararEmail(campanha, destinatarios)
+    : await dispararWhatsApp(campanha, destinatarios);
+
+  await supabase.from('campanhas').update({ status: 'concluido', concluido_em: new Date().toISOString() }).eq('id', id);
+  return { success: true, total: destinatarios.length, enviados: resultado.enviados, falhas: resultado.falhas };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   if (!autenticar(req)) return res.status(401).json({ success: false, mensagem: 'Não autorizado.' });
 
-  /* ── GET: listar campanhas ── */
+  /* ── GET: listar campanhas (ou cron auto-disparo) ── */
   if (req.method === 'GET') {
+    if (req.headers['x-vercel-cron'] === '1') {
+      const now = new Date().toISOString();
+      const { data: agendadas } = await supabase
+        .from('campanhas').select('id')
+        .eq('status', 'aprovado')
+        .not('agendado_para', 'is', null)
+        .lte('agendado_para', now);
+      let disparados = 0;
+      for (const c of agendadas || []) {
+        await dispararCampanha(c.id);
+        disparados++;
+      }
+      return res.status(200).json({ success: true, disparados });
+    }
+
     const { data, error } = await supabase
       .from('campanhas')
-      .select('id, nome, tipo, publico, assunto, status, midia_url, midia_tipo, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
+      .select('id, nome, tipo, publico, lista_externa, assunto, status, midia_url, midia_tipo, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
       .order('criado_em', { ascending: false });
     if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao consultar campanhas.' });
     const stats = {};
@@ -200,63 +274,11 @@ module.exports = async (req, res) => {
     if (body.action === 'disparar') {
       const { id } = body;
       if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
-
-      const { data: campanha, error: campErr } = await supabase
-        .from('campanhas').select('*').eq('id', id).single();
-      if (campErr || !campanha)
-        return res.status(404).json({ success: false, mensagem: 'Campanha não encontrada.' });
-      if (campanha.status !== 'aprovado')
-        return res.status(400).json({ success: false, mensagem: 'Apenas campanhas aprovadas podem ser disparadas.' });
-
-      const cfgDisp = await getConfigs('resend_key', 'whatsapp_token', 'whatsapp_phone_id');
-      if (campanha.tipo === 'email' && !(cfgDisp.resend_key || process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY))
-        return res.status(503).json({ success: false, mensagem: 'Chave Resend não configurada. Adicione em Configurações ou no Vercel.' });
-      if (campanha.tipo === 'whatsapp' && !(cfgDisp.whatsapp_token || process.env.WHATSAPP_TOKEN) || !(cfgDisp.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID))
-        return res.status(503).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas. Adicione em Configurações ou no Vercel.' });
-
-      let destinatarios = [];
-      if (campanha.publico === 'inscritos') {
-        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
-        const { data } = await supabase.from('inscritos')
-          .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null);
-        destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
-      } else {
-        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
-        const listaNome = campanha.publico.startsWith('externos:') ? campanha.publico.slice(9) : null;
-        let extQ = supabase.from('contatos_externos')
-          .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null);
-        if (listaNome) extQ = extQ.eq('lista', listaNome);
-        const { data } = await extQ;
-        if (campanha.tipo === 'email') {
-          const { data: desc } = await supabase.from('descadastros').select('email');
-          const descSet = new Set((desc || []).map(d => d.email.toLowerCase()));
-          destinatarios = (data || []).filter(r => !descSet.has(r.email.toLowerCase()))
-            .map(r => ({ nome: r.nome, email: r.email }));
-        } else {
-          destinatarios = (data || []).map(r => ({ nome: r.nome, telefone: r.telefone }));
-        }
-      }
-
-      if (!destinatarios.length)
-        return res.status(400).json({ success: false, mensagem: 'Nenhum destinatário encontrado.' });
-
-      await supabase.from('disparos').insert(destinatarios.map(d => ({
-        campanha_id: campanha.id,
-        destinatario: campanha.tipo === 'email' ? d.email : d.telefone,
-        nome: d.nome, status: 'pendente',
-      })));
-      await supabase.from('campanhas').update({ status: 'enviando', iniciado_em: new Date().toISOString() }).eq('id', id);
-
-      const resultado = campanha.tipo === 'email'
-        ? await dispararEmail(campanha, destinatarios)
-        : await dispararWhatsApp(campanha, destinatarios);
-
-      await supabase.from('campanhas').update({ status: 'concluido', concluido_em: new Date().toISOString() }).eq('id', id);
-
+      const resultado = await dispararCampanha(id);
+      if (!resultado.success) return res.status(400).json(resultado);
       return res.status(200).json({
-        success: true,
+        ...resultado,
         mensagem: `Disparo concluído: ${resultado.enviados} enviados, ${resultado.falhas} falhas.`,
-        total: destinatarios.length, enviados: resultado.enviados, falhas: resultado.falhas,
       });
     }
 
@@ -537,12 +559,12 @@ module.exports = async (req, res) => {
     }
 
     /* --- Criar campanha --- */
-    const { nome, tipo, publico, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo, template_name, template_language } = body;
+    const { nome, tipo, publico, lista_externa, assunto, conteudo_html, conteudo_text, agendado_para, status, midia_url, midia_tipo, template_name, template_language } = body;
     if (!nome || !tipo || !publico)
       return res.status(400).json({ success: false, mensagem: 'Campos obrigatórios: nome, tipo, publico.' });
     if (!['email', 'whatsapp'].includes(tipo))
       return res.status(400).json({ success: false, mensagem: 'Tipo inválido.' });
-    if (!['inscritos', 'externos'].includes(publico) && !publico.startsWith('externos:'))
+    if (!['inscritos', 'externos'].includes(publico))
       return res.status(400).json({ success: false, mensagem: 'Público inválido.' });
     if (tipo === 'email' && !assunto)
       return res.status(400).json({ success: false, mensagem: 'Assunto obrigatório para campanhas de e-mail.' });
@@ -552,6 +574,7 @@ module.exports = async (req, res) => {
 
     const { data, error } = await supabase.from('campanhas').insert({
       nome: nome.trim(), tipo, publico,
+      lista_externa:     lista_externa     || null,
       assunto: assunto?.trim() || null,
       conteudo_html:     conteudo_html     || null,
       conteudo_text:     conteudo_text     || null,
@@ -569,7 +592,7 @@ module.exports = async (req, res) => {
 
   /* ── PATCH: atualizar campanha ── */
   if (req.method === 'PATCH') {
-    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico, midia_url, midia_tipo, template_name, template_language } = req.body || {};
+    const { id, status, nome, assunto, conteudo_html, conteudo_text, agendado_para, publico, lista_externa, midia_url, midia_tipo, template_name, template_language } = req.body || {};
     if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
 
     const { data: atual, error: fetchErr } = await supabase
@@ -595,6 +618,7 @@ module.exports = async (req, res) => {
       if (conteudo_text !== undefined) campos.conteudo_text = conteudo_text;
       if (agendado_para !== undefined) campos.agendado_para = agendado_para || null;
       if (publico)                     campos.publico       = publico;
+      if (lista_externa    !== undefined) campos.lista_externa  = lista_externa   || null;
       if (midia_url        !== undefined) campos.midia_url      = midia_url       || null;
       if (midia_tipo       !== undefined) campos.midia_tipo     = midia_tipo      || null;
       if (template_name    !== undefined) campos.template_name  = template_name   || null;

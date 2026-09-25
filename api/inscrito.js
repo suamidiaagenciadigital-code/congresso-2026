@@ -60,6 +60,20 @@ module.exports = async (req, res) => {
     return res.status(200).json({ success: true });
   }
 
+  /* ── Descadastro de e-mail ── */
+  if (req.query.acao === 'descadastrar') {
+    const email = (req.query.email || '').trim().toLowerCase();
+    const campId = req.query.camp || null;
+    if (email) {
+      await supabase.from('descadastros').upsert(
+        { email, campanha_id: campId, descadastrado_em: new Date().toISOString() },
+        { onConflict: 'email' }
+      );
+    }
+    res.setHeader('Location', '/descadastrado.html');
+    return res.status(302).end();
+  }
+
   /* ── Pixel de rastreamento de abertura e clique ── */
   if (req.query.acao === 'track') {
     const { c: campId, e: email, t: tipo, url } = req.query;
