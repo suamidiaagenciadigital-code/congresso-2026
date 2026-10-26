@@ -301,6 +301,13 @@
           <option value="1">Enviados</option>
         </select>
       </div>
+      <div><label>PcD</label>
+        <select id="f-pcd">
+          <option value="">Todos</option>
+          <option value="1">Sim — PcD</option>
+          <option value="0">Não</option>
+        </select>
+      </div>
       <button class="btn btn-principal" id="btn-filtrar">Filtrar</button>
       <button class="btn btn-limpar"    id="btn-limpar">Limpar</button>
     </div>
@@ -683,12 +690,16 @@
       </div>
       <!-- Template WhatsApp -->
       <div class="camp-form-group" id="row-template" style="display:none">
-        <label>Template aprovado <span style="font-weight:400;color:#888">(opcional — necessário para campanhas em massa)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:start">
+        <label>Template aprovado <span style="font-weight:400;color:#888">(obrigatório para campanhas em massa)</span></label>
+        <div style="display:grid;grid-template-columns:1fr auto 140px;gap:10px;align-items:start">
           <div>
-            <input type="text" id="camp-template-name" placeholder="Ex: congresso_2026" maxlength="100">
-            <small>Nome do template aprovado no Gerenciador do WhatsApp Business. Deixe em branco para texto livre (só funciona se o contato enviou mensagem nas últimas 24h).</small>
+            <select id="camp-template-name" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;background:#fff">
+              <option value="">— Clique em "Carregar" para ver os templates —</option>
+            </select>
+            <div id="camp-template-preview" style="display:none;margin-top:8px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.78rem;white-space:pre-wrap;color:#166534;line-height:1.5"></div>
+            <small>Selecione o template aprovado no WhatsApp Business. Necessário para campanhas em massa (fora da janela de 24h).</small>
           </div>
+          <button type="button" id="btn-carregar-templates" style="padding:8px 12px;background:#128C7E;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.8rem;white-space:nowrap;height:38px">↻ Carregar</button>
           <div>
             <label style="font-size:11px;color:#666;display:block;margin-bottom:4px">Idioma</label>
             <select id="camp-template-lang" style="width:100%">
@@ -767,7 +778,8 @@
     </div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div id="modal-relat-stats"></div>
-      <div class="table-wrapper">
+      <div class="scroll-topo" id="scroll-topo-relat"><div class="scroll-topo-inner" id="scroll-topo-relat-inner"></div></div>
+      <div class="table-wrapper" id="table-wrapper-relat">
         <table>
           <thead><tr>
             <th>Nome</th><th>Destinatário</th><th>Status</th>
@@ -918,6 +930,7 @@ function getParams() {
     uf:    document.getElementById('f-uf').value,
     area:  document.getElementById('f-area').value,
     cert:  document.getElementById('f-cert').value,
+    pcd:   document.getElementById('f-pcd').value,
   };
 }
 
@@ -932,7 +945,7 @@ async function filtrar() {
 
 document.getElementById('btn-filtrar').addEventListener('click', filtrar);
 document.getElementById('btn-limpar').addEventListener('click', () => {
-  ['f-busca','f-uf','f-area','f-cert'].forEach(id => { document.getElementById(id).value = ''; });
+  ['f-busca','f-uf','f-area','f-cert','f-pcd'].forEach(id => { document.getElementById(id).value = ''; });
   filtrar();
 });
 let debounce;
@@ -1230,6 +1243,26 @@ document.getElementById('btn-cert-teste').addEventListener('click', async () => 
   window.addEventListener('resize', sincronizarLargura);
 })();
 
+// ─── Barra de rolagem espelhada no topo — modal relatório ─
+(function() {
+  const topo  = document.getElementById('scroll-topo-relat');
+  const inner = document.getElementById('scroll-topo-relat-inner');
+  const wrap  = document.getElementById('table-wrapper-relat');
+
+  function sincronizarLargura() {
+    const tabela = wrap.querySelector('table');
+    if (tabela) inner.style.width = tabela.scrollWidth + 'px';
+  }
+
+  topo.addEventListener('scroll', () => { wrap.scrollLeft = topo.scrollLeft; });
+  wrap.addEventListener('scroll', () => { topo.scrollLeft = wrap.scrollLeft; });
+
+  const observer = new MutationObserver(sincronizarLargura);
+  observer.observe(wrap, { childList: true, subtree: true });
+  window.addEventListener('resize', sincronizarLargura);
+  window.atualizarScrollRelatTopo = sincronizarLargura;
+})();
+
 // ─── Campanhas ───────────────────────────────────────────
 let campIdAtual = null;
 
@@ -1364,6 +1397,9 @@ function abrirModalCampanha(camp = null) {
 
   atualizarCampTipo();
   atualizarCampPublico(camp?.lista_externa || '');
+  if ((camp?.tipo || 'email') === 'whatsapp') {
+    carregarTemplatesWA(camp?.template_name || '');
+  }
   document.getElementById('modal-camp-overlay').classList.add('aberto');
 }
 
@@ -1673,6 +1709,7 @@ async function verRelatorio(id, nome) {
       <td style="font-size:11px;color:#c00">${esc(d.erro||'')}</td>
     </tr>`).join('');
     document.getElementById('modal-relat-tbody').innerHTML = rows || '<tr><td colspan="6" class="vazio">Nenhum registro</td></tr>';
+    setTimeout(() => window.atualizarScrollRelatTopo && window.atualizarScrollRelatTopo(), 50);
   } catch(e) {
     document.getElementById('modal-relat-stats').innerHTML = '<span style="color:red">Erro ao carregar relatório.</span>';
   }
@@ -1718,7 +1755,51 @@ document.getElementById('modal-camp-cancelar').addEventListener('click', fecharM
 document.getElementById('modal-camp-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-camp-overlay')) fecharModalCampanha();
 });
-document.getElementById('camp-tipo').addEventListener('change', atualizarCampTipo);
+document.getElementById('camp-tipo').addEventListener('change', () => {
+  atualizarCampTipo();
+  if (document.getElementById('camp-tipo').value === 'whatsapp') carregarTemplatesWA();
+});
+
+// ─── Templates WhatsApp ───────────────────────────────────
+let _templatesWACache = null;
+
+async function carregarTemplatesWA(templateAtual = '') {
+  const btn = document.getElementById('btn-carregar-templates');
+  const sel = document.getElementById('camp-template-name');
+  btn.disabled = true; btn.textContent = '⏳ Carregando...';
+  try {
+    const r = await fetch('/api/admin/campanhas', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ action: 'listar-templates-wa' }),
+    });
+    const j = await r.json();
+    if (!j.success) { alert('Erro ao carregar templates: ' + j.mensagem); return; }
+    _templatesWACache = j.templates;
+    sel.innerHTML = '<option value="">— Selecione um template —</option>' +
+      j.templates.map(t => `<option value="${t.name}" data-lang="${t.language}" data-body="${encodeURIComponent(t.body)}">${t.name} (${t.language})</option>`).join('');
+    if (templateAtual) sel.value = templateAtual;
+    atualizarPreviewTemplate();
+  } catch(e) { alert('Erro de conexão ao carregar templates.'); }
+  btn.disabled = false; btn.textContent = '↻ Carregar';
+}
+
+function atualizarPreviewTemplate() {
+  const sel = document.getElementById('camp-template-name');
+  const preview = document.getElementById('camp-template-preview');
+  const opt = sel.options[sel.selectedIndex];
+  const body = opt?.dataset?.body ? decodeURIComponent(opt.dataset.body) : '';
+  if (body && sel.value) {
+    preview.textContent = body;
+    preview.style.display = 'block';
+    const lang = opt.dataset.lang || 'pt_BR';
+    document.getElementById('camp-template-lang').value = lang;
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+document.getElementById('btn-carregar-templates').addEventListener('click', () => carregarTemplatesWA(document.getElementById('camp-template-name').value));
+document.getElementById('camp-template-name').addEventListener('change', atualizarPreviewTemplate);
 document.getElementById('btn-camp-rascunho').addEventListener('click',      () => salvarCampanha('rascunho'));
 document.getElementById('btn-camp-aprovar-direto').addEventListener('click', () => salvarCampanha('aprovado'));
 

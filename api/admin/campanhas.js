@@ -168,13 +168,13 @@ async function dispararCampanha(id) {
   if (campanha.publico === 'inscritos') {
     const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
     const { data } = await supabase.from('inscritos')
-      .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null);
+      .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null).limit(10000);
     destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
   } else {
     const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
     const listaNome = campanha.lista_externa || null;
     let extQ = supabase.from('contatos_externos')
-      .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null);
+      .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null).limit(10000);
     if (listaNome) extQ = extQ.eq('lista', listaNome);
     const { data } = await extQ;
     if (campanha.tipo === 'email') {
@@ -228,7 +228,7 @@ module.exports = async (req, res) => {
 
     const { data, error } = await supabase
       .from('campanhas')
-      .select('id, nome, tipo, publico, lista_externa, assunto, status, midia_url, midia_tipo, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
+      .select('id, nome, tipo, publico, lista_externa, assunto, conteudo_html, conteudo_text, template_name, template_language, status, midia_url, midia_tipo, agendado_para, aprovado_por, aprovado_em, iniciado_em, concluido_em, criado_em')
       .order('criado_em', { ascending: false });
     if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao consultar campanhas.' });
     const stats = {};
@@ -408,6 +408,26 @@ module.exports = async (req, res) => {
       const { data, error, count } = await query;
       if (error) return res.status(500).json({ success: false, mensagem: 'Erro ao listar contatos.' });
       return res.status(200).json({ success: true, contatos: data || [], total: count || 0, page, limit });
+    }
+
+    /* --- Listar templates WhatsApp aprovados --- */
+    if (body.action === 'listar-templates-wa') {
+      const cfg = await getConfigs('whatsapp_token', 'whatsapp_waba_id');
+      const token  = cfg.whatsapp_token  || process.env.WHATSAPP_TOKEN;
+      const wabaId = cfg.whatsapp_waba_id || process.env.WHATSAPP_WABA_ID;
+      if (!token || !wabaId) return res.json({ success: false, mensagem: 'Configure o Token e WABA ID nas Configurações.' });
+      const resp = await fetch(`https://graph.facebook.com/v18.0/${wabaId}/message_templates?status=APPROVED&fields=name,language,category,components&limit=100`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const json = await resp.json();
+      if (json.error) return res.json({ success: false, mensagem: json.error.message });
+      const templates = (json.data || []).map(t => ({
+        name: t.name,
+        language: t.language,
+        category: t.category,
+        body: (t.components || []).find(c => c.type === 'BODY')?.text || '',
+      }));
+      return res.json({ success: true, templates });
     }
 
     /* --- Listar nomes de listas --- */
