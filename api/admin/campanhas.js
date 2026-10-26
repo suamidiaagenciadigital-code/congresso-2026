@@ -146,7 +146,7 @@ async function dispararWhatsApp(campanha, destinatarios) {
         .eq('campanha_id', campanha.id).eq('destinatario', d.telefone);
       falhas++;
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 200));
   }
   return { enviados, falhas };
 }
@@ -270,16 +270,92 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, url: publicUrl, midia_tipo: midiaTipo });
     }
 
-    /* --- Disparar campanha --- */
+    /* --- Disparar campanha: inicializa a fila e retorna total (sem enviar) --- */
     if (body.action === 'disparar') {
       const { id } = body;
       if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
-      const resultado = await dispararCampanha(id);
-      if (!resultado.success) return res.status(400).json(resultado);
-      return res.status(200).json({
-        ...resultado,
-        mensagem: `Disparo concluído: ${resultado.enviados} enviados, ${resultado.falhas} falhas.`,
-      });
+
+      const { data: campanha, error: campErr } = await supabase
+        .from('campanhas').select('*').eq('id', id).single();
+      if (campErr || !campanha) return res.status(400).json({ success: false, mensagem: 'Campanha não encontrada.' });
+      if (campanha.status !== 'aprovado') return res.status(400).json({ success: false, mensagem: 'Apenas campanhas aprovadas podem ser disparadas.' });
+
+      const cfgDisp = await getConfigs('resend_key', 'whatsapp_token', 'whatsapp_phone_id');
+      if (campanha.tipo === 'email' && !(cfgDisp.resend_key || process.env.RESEND_API_KEY_PRO || process.env.RESEND_API_KEY))
+        return res.status(400).json({ success: false, mensagem: 'Chave Resend não configurada.' });
+      if (campanha.tipo === 'whatsapp' && (!(cfgDisp.whatsapp_token || process.env.WHATSAPP_TOKEN) || !(cfgDisp.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID)))
+        return res.status(400).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas.' });
+
+      let destinatarios = [];
+      if (campanha.publico === 'inscritos') {
+        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+        const { data } = await supabase.from('inscritos')
+          .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null).limit(10000);
+        destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
+      } else {
+        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+        const listaNome = campanha.lista_externa || null;
+        let extQ = supabase.from('contatos_externos')
+          .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null).limit(10000);
+        if (listaNome) extQ = extQ.eq('lista', listaNome);
+        const { data } = await extQ;
+        if (campanha.tipo === 'email') {
+          const { data: desc } = await supabase.from('descadastros').select('email');
+          const descSet = new Set((desc || []).map(d => d.email.toLowerCase()));
+          destinatarios = (data || []).filter(r => !descSet.has(r.email.toLowerCase()))
+            .map(r => ({ nome: r.nome, email: r.email }));
+        } else {
+          destinatarios = (data || []).map(r => ({ nome: r.nome, telefone: r.telefone }));
+        }
+      }
+
+      if (!destinatarios.length) return res.status(400).json({ success: false, mensagem: 'Nenhum destinatário encontrado.' });
+
+      await supabase.from('disparos').insert(destinatarios.map(d => ({
+        campanha_id: campanha.id,
+        destinatario: campanha.tipo === 'email' ? d.email : d.telefone,
+        nome: d.nome, status: 'pendente',
+      })));
+      await supabase.from('campanhas').update({ status: 'enviando', iniciado_em: new Date().toISOString() }).eq('id', id);
+
+      return res.status(200).json({ success: true, total: destinatarios.length, mensagem: `Disparo iniciado: ${destinatarios.length} na fila.` });
+    }
+
+    /* --- Disparar lote: processa o próximo batch de pendentes --- */
+    if (body.action === 'disparar-lote') {
+      const { id, batch_size = 30 } = body;
+      if (!id) return res.status(400).json({ success: false, mensagem: 'ID obrigatório.' });
+
+      const { data: campanha } = await supabase.from('campanhas').select('*').eq('id', id).single();
+      if (!campanha) return res.status(404).json({ success: false, mensagem: 'Campanha não encontrada.' });
+      if (campanha.status !== 'enviando')
+        return res.json({ success: true, processed: 0, enviados: 0, falhas: 0, remaining: 0, done: true });
+
+      const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
+      const { data: lote } = await supabase
+        .from('disparos').select('destinatario, nome')
+        .eq('campanha_id', id).eq('status', 'pendente')
+        .order('id', { ascending: true }).limit(batch_size);
+
+      if (!lote?.length) {
+        await supabase.from('campanhas').update({ status: 'concluido', concluido_em: new Date().toISOString() }).eq('id', id);
+        return res.json({ success: true, processed: 0, enviados: 0, falhas: 0, remaining: 0, done: true });
+      }
+
+      const destinatarios = lote.map(d => ({ nome: d.nome, [campo]: d.destinatario }));
+      const resultado = campanha.tipo === 'email'
+        ? await dispararEmail(campanha, destinatarios)
+        : await dispararWhatsApp(campanha, destinatarios);
+
+      const { count: remaining } = await supabase.from('disparos')
+        .select('*', { count: 'exact', head: true })
+        .eq('campanha_id', id).eq('status', 'pendente');
+
+      const done = (remaining || 0) === 0;
+      if (done)
+        await supabase.from('campanhas').update({ status: 'concluido', concluido_em: new Date().toISOString() }).eq('id', id);
+
+      return res.json({ success: true, processed: lote.length, enviados: resultado.enviados, falhas: resultado.falhas, remaining: remaining || 0, done });
     }
 
     /* --- Envio de teste (sem alterar status da campanha) --- */

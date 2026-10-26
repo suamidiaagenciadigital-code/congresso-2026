@@ -1604,17 +1604,42 @@ async function aprovarCampanha(id, nome, statusAtual) {
 async function dispararCampanha(id, nome) {
   if (!confirm(`DISPARAR a campanha "${nome}" agora?\n\nMensagens serão enviadas para todos os destinatários.\nEsta ação não pode ser desfeita.`)) return;
   const msgEl = document.getElementById('msg-camp');
-  msgEl.textContent = '⏳ Iniciando disparo... aguarde.';
+
+  // Passo 1: inicializa a fila
+  msgEl.textContent = '⏳ Preparando fila de disparo…';
+  let total = 0;
   try {
-    const resp = await fetch('/api/admin/campanhas', {
+    const r = await fetch('/api/admin/campanhas', {
       method: 'POST', headers: authHeaders(),
       body: JSON.stringify({ action: 'disparar', id }),
     });
-    const json = await resp.json();
-    msgEl.textContent = json.mensagem || (json.success ? 'Disparo concluído!' : 'Erro no disparo.');
-    if (json.success) setTimeout(() => { carregarCampanhas(); msgEl.textContent = ''; }, 3000);
-    else setTimeout(() => { msgEl.textContent = ''; }, 8000);
-  } catch { msgEl.textContent = 'Erro de conexão.'; }
+    const j = await r.json();
+    if (!j.success) { msgEl.textContent = '❌ ' + (j.mensagem || 'Erro ao iniciar.'); return; }
+    total = j.total;
+  } catch { msgEl.textContent = '❌ Erro de conexão.'; return; }
+
+  // Passo 2: processa em lotes e exibe progresso
+  let enviados = 0, falhas = 0, done = false;
+  while (!done) {
+    const pct = total > 0 ? Math.round((enviados + falhas) / total * 100) : 0;
+    msgEl.textContent = `⏳ Disparando… ${enviados + falhas}/${total} (${pct}%) · ${enviados} enviados · ${falhas} falhas`;
+    try {
+      const r = await fetch('/api/admin/campanhas', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ action: 'disparar-lote', id, batch_size: 30 }),
+      });
+      const j = await r.json();
+      if (!j.success) { msgEl.textContent = '❌ Erro no lote: ' + (j.mensagem || 'Tente novamente.'); return; }
+      enviados += j.enviados || 0;
+      falhas   += j.falhas   || 0;
+      done      = j.done;
+      if (!done) await new Promise(res => setTimeout(res, 500));
+    } catch { msgEl.textContent = '❌ Erro de conexão durante disparo.'; return; }
+  }
+
+  msgEl.textContent = `✅ Disparo concluído: ${enviados} enviados, ${falhas} falhas de ${total}.`;
+  carregarCampanhas();
+  setTimeout(() => { msgEl.textContent = ''; }, 10000);
 }
 
 async function excluirCampanha(id, nome) {
