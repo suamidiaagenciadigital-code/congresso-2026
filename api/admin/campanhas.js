@@ -4,6 +4,19 @@ const { Resend } = require('resend');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+async function buscarTodosPaginado(builderFn, campos) {
+  const PAGE = 1000;
+  let todos = [], pagina = 0;
+  while (true) {
+    const { data } = await builderFn(campos).range(pagina * PAGE, (pagina + 1) * PAGE - 1);
+    if (!data?.length) break;
+    todos = todos.concat(data);
+    if (data.length < PAGE) break;
+    pagina++;
+  }
+  return todos;
+}
+
 async function getConfigs(...chaves) {
   const { data } = await supabase.from('configuracoes').select('chave, valor').in('chave', chaves);
   const map = {};
@@ -286,36 +299,47 @@ module.exports = async (req, res) => {
       if (campanha.tipo === 'whatsapp' && (!(cfgDisp.whatsapp_token || process.env.WHATSAPP_TOKEN) || !(cfgDisp.whatsapp_phone_id || process.env.WHATSAPP_PHONE_ID)))
         return res.status(400).json({ success: false, mensagem: 'Credenciais WhatsApp não configuradas.' });
 
+      const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
       let destinatarios = [];
       if (campanha.publico === 'inscritos') {
-        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
-        const { data } = await supabase.from('inscritos')
-          .select(`nome_completo, nome_social, ${campo}`).not(campo, 'is', null).limit(10000);
-        destinatarios = (data || []).map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
+        const rows = await buscarTodosPaginado(
+          (c) => supabase.from('inscritos').select(c).not(campo, 'is', null),
+          `nome_completo, nome_social, ${campo}`
+        );
+        destinatarios = rows.map(r => ({ nome: r.nome_social || r.nome_completo, [campo]: r[campo] }));
       } else {
-        const campo = campanha.tipo === 'email' ? 'email' : 'telefone';
         const listaNome = campanha.lista_externa || null;
-        let extQ = supabase.from('contatos_externos')
-          .select(`nome, ${campo}`).eq('ativo', true).not(campo, 'is', null).limit(10000);
-        if (listaNome) extQ = extQ.eq('lista', listaNome);
-        const { data } = await extQ;
+        const rows = await buscarTodosPaginado(
+          (c) => {
+            let q = supabase.from('contatos_externos').select(c).eq('ativo', true).not(campo, 'is', null);
+            if (listaNome) q = q.eq('lista', listaNome);
+            return q;
+          },
+          `nome, ${campo}`
+        );
         if (campanha.tipo === 'email') {
           const { data: desc } = await supabase.from('descadastros').select('email');
           const descSet = new Set((desc || []).map(d => d.email.toLowerCase()));
-          destinatarios = (data || []).filter(r => !descSet.has(r.email.toLowerCase()))
+          destinatarios = rows.filter(r => !descSet.has(r.email.toLowerCase()))
             .map(r => ({ nome: r.nome, email: r.email }));
         } else {
-          destinatarios = (data || []).map(r => ({ nome: r.nome, telefone: r.telefone }));
+          destinatarios = rows.map(r => ({ nome: r.nome, telefone: r.telefone }));
         }
       }
 
       if (!destinatarios.length) return res.status(400).json({ success: false, mensagem: 'Nenhum destinatário encontrado.' });
 
-      await supabase.from('disparos').insert(destinatarios.map(d => ({
-        campanha_id: campanha.id,
-        destinatario: campanha.tipo === 'email' ? d.email : d.telefone,
-        nome: d.nome, status: 'pendente',
-      })));
+      // Insere em lotes de 500 para não ultrapassar limites do Supabase
+      const INS = 500;
+      for (let i = 0; i < destinatarios.length; i += INS) {
+        await supabase.from('disparos').insert(
+          destinatarios.slice(i, i + INS).map(d => ({
+            campanha_id: campanha.id,
+            destinatario: campanha.tipo === 'email' ? d.email : d.telefone,
+            nome: d.nome, status: 'pendente',
+          }))
+        );
+      }
       await supabase.from('campanhas').update({ status: 'enviando', iniciado_em: new Date().toISOString() }).eq('id', id);
 
       return res.status(200).json({ success: true, total: destinatarios.length, mensagem: `Disparo iniciado: ${destinatarios.length} na fila.` });
